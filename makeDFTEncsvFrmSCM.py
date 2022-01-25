@@ -82,13 +82,27 @@ def get_dft_energies(logfile):
 def get_smiles_from_xyz(ixyzfile):
     """Function that takes xyzfile path and return the smiles"""
     atoms, charge, xyz_coordinates = xyz2mol.read_xyz_file(ixyzfile)
-    mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
-                           use_graph=True, allow_charged_fragments=True,
+    return_code = True
+    try:
+        mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
+                           use_graph=True, allow_charged_fragments=False,
                            embed_chiral=True, use_huckel=False)
-    if len(mols) == 0:
-        print("No mol object from file: ", files)
-    smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
+    except:
+        return_code = False
+    if return_code:
+        if len(mols) == 0:
+            print("No mol object from file: ", files)
+        smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
+    else:
+        smiles = ""
     return smiles
+
+
+def update_failed_indices(outputfile, indices):
+    with open(outputfile, 'w') as fp:
+        for index in indices:
+            fp.write("%s\n" % str(index))
+    return
 
 
 def main():
@@ -100,10 +114,17 @@ def main():
                         required=True)
     parser.add_argument('-o', '--output_csv', help="Name of the output csv file for the energies.",
                         required=False, default='qm9_dft_en.csv')
+    parser.add_argument('-f', '--failed_file', help="File in which to update the indices where processing failed",
+                        required=False, default='failed_dft.dat')
+
+
     args = parser.parse_args()
     xyz_dir = args.xyzd
     output_csv = args.output_csv
     log_dir = args.dir_logfiles
+    failed_output = args.failed_file
+
+
     all_key_vals = {}
     print("XYZ dir: ", xyz_dir)
     print("output csv: ", output_csv)
@@ -116,6 +137,11 @@ def main():
         print("The number of logfiles and xyzfiles are different. Please check the directories.")
         print("The program will exit now.")
         sys.exit()
+
+
+    failed_file_indices = []
+
+
     for i in range(len(logfiles)):
         if i == 0:
             write_mode = 'w'
@@ -135,14 +161,24 @@ def main():
         print(logindex, ilogfile, xyzfiles[i])
         # collect the DFT energies as a dictionary:
         dft_energies = get_dft_energies(os.path.abspath(ilogfile))
+        if not dft_energies:
+            print("No dft energies found for index: ", logindex)
+            failed_file_indices.append(logindex)
+            continue
         # Get the smile string using the xyz2mol module.
         xyz_smiles = get_smiles_from_xyz(ixyzfile)
+        if not xyz_smiles:
+            print("Xyz not converted to file for index: ", logindex)
+            update_failed_indices(failed_output, logindex)
+            continue
         all_key_vals["index"] = logindex
         all_key_vals["smiles"] = xyz_smiles
         all_key_vals.update(dft_energies)
         save_to_output(output_csv, write_mode, all_key_vals)
+        break
         if i%10000 == 0:
             print("Number of DFT energies collected: ", (i+1))
+    update_failed_indices(failed_output, failed_file_indices)
     return
 
 
