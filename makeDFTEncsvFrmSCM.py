@@ -25,8 +25,24 @@ def get_all_logfiles(log_dir):
 
 
 def get_xyz_files(xyz_dir):
-    print("Function yet to built")
-    return 2
+    """This function will return a list of xyz files as list. The list elements
+    will be in the form of path object. The expected file name is: dsgdb9nsd_n.xyz
+    where n is an integer number.
+    args:
+        directory - Path from which xyz files needs to be found.
+    returns:
+        xyz_files - List of xyz files with names dsgdb9nsd_*.xyz after being sorted."""
+    xyz_files = []
+    for file in os.listdir(directory):
+        # Take the xyz files which has 'dsgdb9nsd_' in their name
+        if fnmatch.fnmatch(file, 'dsgdb9nsd_*.xyz'):
+            xyz_files.append(file)
+    # Check if the list xyz_files is empty. If it is empty, then program exits.
+    if not xyz_files:
+        print("No files with extension .xyz found in directory: ", directory)
+        print("Program exit now.")
+        sys.exit()
+    return sorted(xyz_files)
 
 
 def main():
@@ -48,6 +64,7 @@ def main():
     logfiles = get_all_logfiles(log_dir)
     print("Number of logfiles: ", len(logfiles))
     xyzfiles = get_xyz_files(xyz_dir)
+    print("Number of xyzfiles: ", len(xyzfiles))
     return
 
 
