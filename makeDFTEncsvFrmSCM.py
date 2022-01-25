@@ -175,7 +175,6 @@ def main():
         all_key_vals["smiles"] = xyz_smiles
         all_key_vals.update(dft_energies)
         save_to_output(output_csv, write_mode, all_key_vals)
-        break
         if i%10000 == 0:
             print("Number of DFT energies collected: ", (i+1))
     update_failed_indices(failed_output, failed_file_indices)
