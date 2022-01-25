@@ -3,6 +3,8 @@ import fnmatch
 import csv
 import pandas as pd
 import argparse
+import xyz2mol
+from rdkit import Chem
 
 
 def get_all_logfiles(log_dir):
@@ -15,7 +17,7 @@ def get_all_logfiles(log_dir):
     logfiles = []
     for files in os.listdir(log_dir):
         if fnmatch.fnmatch(files, '*_xyz.out'):
-            logfiles.append(files)
+            logfiles.append(os.path.abspath(os.path.join(log_dir, files)))
     # Check if the list logfiles is empty:
     if not logfiles:
         print("No files with name *_.out found in directory: ", log_dir)
@@ -33,10 +35,10 @@ def get_xyz_files(xyz_dir):
     returns:
         xyz_files - List of xyz files with names dsgdb9nsd_*.xyz after being sorted."""
     xyz_files = []
-    for file in os.listdir(xyz_dir):
+    for files in os.listdir(xyz_dir):
         # Take the xyz files which has 'dsgdb9nsd_' in their name
-        if fnmatch.fnmatch(file, 'dsgdb9nsd_*.xyz'):
-            xyz_files.append(file)
+        if fnmatch.fnmatch(files, 'dsgdb9nsd_*.xyz'):
+            xyz_files.append(os.path.abspath(os.path.join(xyz_dir, files)))
     # Check if the list xyz_files is empty. If it is empty, then program exits.
     if not xyz_files:
         print("No files with extension .xyz found in directory: ", xyz_dir)
@@ -46,7 +48,48 @@ def get_xyz_files(xyz_dir):
 
 
 def save_to_output(outputfile, write_mode, key_value_pairs):
+    """Function to write to csv file"""
+    df = pd.DataFrame(key_value_pairs, index=[0])
+    if write_mode.lower() == "w":
+        df.to_csv(outputfile, mode=write_mode, sep=",", index=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
+    elif write_mode.lower() == "a":
+        df.to_csv(outputfile, mode=write_mode, sep=",", index=False, header=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
+    else:
+        print("CSV file operating mode", write_mode, " not understood")
     return
+
+def get_dft_energies(logfile):
+    """This function takes a ADF logfile and return the dft energies as dictionary.
+    args
+        logfile - ADF output file
+    returns
+        dft_energies - dictionary of DFT energies. Keys as functional, value as energy in eV.
+    """
+    dft_energies = {}
+    with open(logfile, 'r') as flog:
+        for line in flog:
+            if "FR:" in line:
+                FR_cont = True
+                func = line[4:19].strip().upper()
+                en_ev = float(line.split("=")[1].split()[1])
+                dft_energies[func] = en_ev
+    if not FR_cont:
+        print ("No data found for DFT functional")
+        print ("The reason could be that the ADF log file prints the energy with different format.")
+    return dft_energies
+
+
+def get_smiles_from_xyz(ixyzfile):
+    """Function that takes xyzfile path and return the smiles"""
+    atoms, charge, xyz_coordinates = xyz2mol.read_xyz_file(ixyzfile)
+    mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
+                           use_graph=True, allow_charged_fragments=True,
+                           embed_chiral=True, use_huckel=False)
+    if len(mols) == 0:
+        print("No mol object from file: ", files)
+    smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
+    return smiles
+
 
 def main():
     parser = argparse.ArgumentParser("Program to create csv files from the logfiles of SCM output.")
@@ -61,6 +104,7 @@ def main():
     xyz_dir = args.xyzd
     output_csv = args.output_csv
     log_dir = args.dir_logfiles
+    all_key_vals = {}
     print("XYZ dir: ", xyz_dir)
     print("output csv: ", output_csv)
     print("log directory: ", log_dir)
@@ -78,9 +122,27 @@ def main():
         else:
             write_mode = 'a'
         ilogfile = logfiles[i]
-        print(ilogfile, xyzfiles[i])
-        break
-        #save_to_output(output_csv, write_mode, dict_key_values)
+        ixyzfile = xyzfiles[i]
+        # Then, check if the indices of the logfiles and xyzfiles are same
+        # This is a kind of sanity check
+        logindex = os.path.basename(ilogfile).split("_")[0]
+        xyzindex = os.path.basename(ixyzfile).split("_")[1].split(".")[0]
+        if logindex != xyzindex:
+          print("The index in logfile and xyzfiles are not same.")
+          print("Xyzfile: ", ixyzfile)
+          print("logfile: ", ilogfile)
+          break
+        print(logindex, ilogfile, xyzfiles[i])
+        # collect the DFT energies as a dictionary:
+        dft_energies = get_dft_energies(os.path.abspath(ilogfile))
+        # Get the smile string using the xyz2mol module.
+        xyz_smiles = get_smiles_from_xyz(ixyzfile)
+        all_key_vals["index"] = logindex
+        all_key_vals["smiles"] = xyz_smiles
+        all_key_vals.update(dft_energies)
+        save_to_output(output_csv, write_mode, all_key_vals)
+        if i%10000 == 0:
+            print("Number of DFT energies collected: ", (i+1))
     return
 
 
