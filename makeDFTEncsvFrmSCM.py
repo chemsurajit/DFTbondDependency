@@ -33,13 +33,13 @@ def get_xyz_files(xyz_dir):
     returns:
         xyz_files - List of xyz files with names dsgdb9nsd_*.xyz after being sorted."""
     xyz_files = []
-    for file in os.listdir(directory):
+    for file in os.listdir(xyz_dir):
         # Take the xyz files which has 'dsgdb9nsd_' in their name
         if fnmatch.fnmatch(file, 'dsgdb9nsd_*.xyz'):
             xyz_files.append(file)
     # Check if the list xyz_files is empty. If it is empty, then program exits.
     if not xyz_files:
-        print("No files with extension .xyz found in directory: ", directory)
+        print("No files with extension .xyz found in directory: ", xyz_dir)
         print("Program exit now.")
         sys.exit()
     return sorted(xyz_files)
