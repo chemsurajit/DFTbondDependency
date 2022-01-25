@@ -78,7 +78,7 @@ def main():
         else:
             write_mode = 'a'
         ilogfile = logfiles[i]
-        print(ilogfile)
+        print(ilogfile, xyzfiles[i])
         break
         #save_to_output(output_csv, write_mode, dict_key_values)
     return
