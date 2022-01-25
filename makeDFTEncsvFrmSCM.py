@@ -45,6 +45,9 @@ def get_xyz_files(xyz_dir):
     return sorted(xyz_files)
 
 
+def save_to_output(outputfile, write_mode, key_value_pairs):
+    return
+
 def main():
     parser = argparse.ArgumentParser("Program to create csv files from the logfiles of SCM output.")
     parser.add_argument('-d', '--dir_logfiles',
@@ -65,6 +68,19 @@ def main():
     print("Number of logfiles: ", len(logfiles))
     xyzfiles = get_xyz_files(xyz_dir)
     print("Number of xyzfiles: ", len(xyzfiles))
+    if len(logfiles) != len(xyzfiles):
+        print("The number of logfiles and xyzfiles are different. Please check the directories.")
+        print("The program will exit now.")
+        sys.exit()
+    for i in range(len(logfiles)):
+        if i == 0:
+            write_mode = 'w'
+        else:
+            write_mode = 'a'
+        ilogfile = logfiles[i]
+        print(ilogfile)
+        break
+        #save_to_output(output_csv, write_mode, dict_key_values)
     return
 
 
