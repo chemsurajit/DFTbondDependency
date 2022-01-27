@@ -169,7 +169,7 @@ def main():
         xyz_smiles = get_smiles_from_xyz(ixyzfile)
         if not xyz_smiles:
             print("Xyz not converted to file for index: ", logindex)
-            update_failed_indices(failed_output, logindex)
+            failed_file_indices.append(logindex)
             continue
         all_key_vals["index"] = logindex
         all_key_vals["smiles"] = xyz_smiles

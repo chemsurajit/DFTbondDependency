@@ -17,12 +17,10 @@ def get_xyz_files(directory):
     returns:
         xyz_files - List of xyz files with names dsgdb9nsd_*.xyz after being sorted."""
     xyz_files = []
-    for file in os.listdir(directory):
-        # 1. take only the files with extension as xyz
-        if file.endswith(".xyz"):
-            # Take the xyz files which has 'dsgdb9nsd_' in their name
-            if fnmatch.fnmatch(file, 'dsgdb9nsd_*.xyz'):
-                xyz_files.append(file)
+    for files in os.listdir(directory):
+        # Take the xyz files which has 'dsgdb9nsd_' in their name
+        if fnmatch.fnmatch(files, 'dsgdb9nsd_*.xyz'):
+            xyz_files.append(os.path.abspath(os.path.join(directory, files)))
     # Check if the list xyz_files is empty. If it is empty, then program exits.
     if not xyz_files:
         print("No files with extension .xyz found in directory: ", directory)
@@ -31,13 +29,13 @@ def get_xyz_files(directory):
     return sorted(xyz_files)
 
 
-def mol_to_bonds_list(molobj, xyzfile):
+def mol_to_bonds_list(molobj, filename):
     """This function takes a RDKit mol object as input with xyzfile and makes
     a list of bonds. The list of bonds will always be confined in the variable
     defined as bonds_list. If some bonds not present, it will be assigned to zero.
     args:
         molobj - RDKit format mol object
-        xyzfile - The xyz file name
+        filename - The xyz file name
     returns:
         bonds_list - list of bonds after counting each of the bond types.
     """
@@ -51,6 +49,7 @@ def mol_to_bonds_list(molobj, xyzfile):
                   'N_s_F': 0, 'F_s_H': 0
                   }
 
+    xyzfile = os.path.basename(filename)
     if molobj is not None:
         for bond in molobj.GetBonds():
             btype = bond.GetBondType()
@@ -239,6 +238,32 @@ def get_properties_combined(index, smiles, bonds_list):
     return {**all_properties, **bonds_list}
 
 
+def get_smiles_from_xyz(ixyzfile):
+    """Function that takes xyzfile path and return the smiles"""
+    atoms, charge, xyz_coordinates = xyz2mol.read_xyz_file(ixyzfile)
+    return_code = True
+    mols = None
+    try:
+        mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
+                               use_graph=True, allow_charged_fragments=False,
+                               embed_chiral=True, use_huckel=False)
+    except:
+        mols = None
+        print("No mol object from the xyz file: ", ixyzfile)
+    return mols
+
+
+def update_failed_indices(outputfile, indices):
+    if not indices:
+        print("Number of failed indices = ", len(indices))
+        print("No file will be created.")
+    else:
+        with open(outputfile, 'w') as fp:
+            for index in indices:
+                fp.write("%s\n" % str(index))
+    return
+
+
 def main():
     #
     # parsing arguments
@@ -249,29 +274,35 @@ def main():
                         required=False, default="./")
     parser.add_argument('-o', '--output', help="Name of the output file. Should end with csv",
                         required=False, default="qm9_bonds.csv")
+    parser.add_argument('-f', '--failed_file', help="File in which to update the indices where processing failed",
+                        required=False, default='failed_bonds.dat')
+
+
     args = parser.parse_args()
     xyz_direcoty = os.path.abspath(args.xyz_directory)
     output_csv = args.output
+    failed_output = args.failed_file
     #
     # End of parsing input arguments
     #
+    
+    
+    
+    failed_mols_indices = []
     print("Directory containing xyz files: ", xyz_direcoty)
     xyzfiles = get_xyz_files(xyz_direcoty)
     print("Number of xyz files: ", len(xyzfiles))
     for i in range(len(xyzfiles)):
         files = xyzfiles[i]
-        # charge is zero everywhere. So, it doesn't have any significance here
-        atoms, charge, xyz_coordinates = xyz2mol.read_xyz_file(files)
-        mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
-                               use_graph=True, allow_charged_fragments=True,
-                               embed_chiral=True, use_huckel=False)
-        if len(mols) == 0:
-            print("No mol object from file: ", files)
+        index = os.path.basename(files).split("/")[-1].split("_")[1].split('.')[0]
+        mols = get_smiles_from_xyz(files)
+        if mols is None:
+            print("Failed to convert xyz to smiles string: ", files)
+            failed_mols_indices.append(index)
             continue
         bonds_list = mol_to_bonds_list(mols[0], files)
         smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
         # index being taken from the xyz file name.
-        index = files.split("/")[-1].split("_")[1].split('.')[0]
         property_value_pair = get_properties_combined(index, smiles, bonds_list)
         df = pd.DataFrame(property_value_pair, index=[0])
         if i == 0:
@@ -282,6 +313,7 @@ def main():
 
         if (i % 10000) == 0:
             print("Number of molecules converted: ", i)
+    update_failed_indices(failed_output, failed_mols_indices)
     return
 
 
