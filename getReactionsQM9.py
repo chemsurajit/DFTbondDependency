@@ -4,17 +4,15 @@ import pandas as pd
 import csv
 
 
-
 def find_reactions(mol_csv_data, output=""):
     """function to get reactions."""
     indices = mol_csv_data["index"].tolist()
     smiles = mol_csv_data["smiles"].tolist()
     formulas = mol_csv_data["chemformula"].tolist()
     nmols = len(indices)
-    pd_react = pd.DataFrame(columns=['reactindex', 'reactsmi', 'pdtindex', 'pdtsmi'])
-    with open(output,'w') as fcsv:
+    with open(output, 'w') as fcsv:
         writer = csv.writer(fcsv, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
-        writer.writerow(['reactindex','reactsmi','pdtindex','pdtsmi'])
+        writer.writerow(['reactindex', 'reactsmi', 'pdtindex', 'pdtsmi'])
         for i in range(nmols):
             reactid = indices[i]
             reactsmi = smiles[i]
@@ -26,7 +24,7 @@ def find_reactions(mol_csv_data, output=""):
                 pdtformula = formulas[j]
                 pdt_elem_count = aseformula(pdtformula).count()
                 if react_elem_count == pdt_elem_count:
-                    writer.writerow([reactid,reactsmi,pdtid,pdtsmi])
+                    writer.writerow([reactid, reactsmi, pdtid, pdtsmi])
             if (i+1) % 10000 == 0:
                 print("Number of outerloop iterated: ", (i+1))
     return
@@ -49,6 +47,7 @@ def main():
     #
     mol_csv_data = pd.read_csv(molecule_csv_file, usecols=["index", "smiles", "chemformula"], index=False, nrows=100)
     find_reactions(mol_csv_data, output=output_csv_file)
+
 
 if __name__ == "__main__":
     main()
