@@ -288,12 +288,12 @@ def update_failed_indices(outputfile, indices):
     return
 
 
-def update_pd_df(inpdf, index=None, smiles=None, chemformula=None, bonds=None, energies=None):
+def update_pd_df(inpdf, index=None, smiles=None, chemformula=None, bonds=None, g4mp2_energy=None, energies=None):
     """Function to update to dataframe
     """
-    row_dict = {"index":index, "smiles":smiles, "chemformula":chemformula}
-    row_dict.update(bonds)
+    row_dict = {"index":index, "smiles":smiles, "chemformula":chemformula, "G4MP2":g4mp2_energy}
     row_dict.update(energies)
+    row_dict.update(bonds)
     df = pd.DataFrame(row_dict, index=[0])
     newdf = pd.concat([inpdf, df])
     return newdf
@@ -310,6 +310,8 @@ def main():
     parser.add_argument('-ld', '--dir_logfiles',
                         help="Location of the directory from where the logfiles will be read.",
                         required=True)
+    parser.add_argument('-g', '--g4mp2_csvfile',
+                        help="Location of the csv file containing G4MP2 energies of the QM9 dataset.", required=True)
     parser.add_argument('-o', '--output', help="Name of the output file. Should end with csv",
                         required=False, default="qm9_bonds_energies.csv")
     parser.add_argument('-f', '--failed_file', help="File in which to update the indices where processing failed",
@@ -319,6 +321,7 @@ def main():
     args = parser.parse_args()
     xyz_direcoty = os.path.abspath(args.xyzd)
     log_dir = args.dir_logfiles
+    qm9_g4pm2_csv = args.g4mp2_csvfile
     output_csv = args.output
     failed_output = args.failed_file
     #
@@ -330,6 +333,7 @@ def main():
     logfiles = get_files(log_dir, match='*_xyz.out')
     print("Number of xyz files: ", len(xyzfiles))
     df = pd.DataFrame()
+    g4mp2_pd = pd.read_csv(qm9_g4pm2_csv)
     for i in range(len(xyzfiles)):
         ixyzfile = xyzfiles[i]
         ilogfile = logfiles[i]
@@ -349,24 +353,17 @@ def main():
             # Get the smile string using the xyz2mol module.
         mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
-            print("Failed to convert xyz to smiles string: ", files)
-            failed_mols_indices.append(index)
+            print("Failed to convert xyz to smiles string: ", ixyzfile)
+            failed_mols_indices.append(xyzindex)
             continue
         bonds_list = mol_to_bonds_list(mols[0], ixyzfile)
         smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
         chemformula = CalcMolFormula(mols[0])
+        g4mp2_energy = g4mp2_pd.loc[g4mp2_pd['index'] == int(logindex), 'G4MP2'].tolist()[0]
         #
         # Write everything to csv file
         #
-        df = update_pd_df(df, index=logindex, smiles=smiles, chemformula=chemformula, bonds=bonds_list, energies=dft_energies)
-        #property_value_pair = get_properties_combined(index, smiles, chemformula, bonds_list)
-        #df = pd.DataFrame(property_value_pair, index=[0])
-        #if i == 0:
-        #    headers = property_value_pair.keys()
-        #    df.to_csv(output_csv, mode='w', sep=",", index=False, header=headers, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
-        #else:
-        #    df.to_csv(output_csv, mode='a', sep=",", index=False, header=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
-
+        df = update_pd_df(df, index=logindex, smiles=smiles, chemformula=chemformula, bonds=bonds_list, g4mp2_energy=g4mp2_energy, energies=dft_energies)
         if (i % 10000) == 0:
             print("Number of molecules converted: ", i)
     #write to csv file.
