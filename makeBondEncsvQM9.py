@@ -4,29 +4,52 @@ import sys
 import fnmatch
 import xyz2mol
 from rdkit import Chem
+from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import pandas as pd
 import csv
 
 
-def get_xyz_files(directory):
+def get_files(directory, match=""):
     """This function will return a list of xyz files as list. The list elements
     will be in the form of path object. The expected file name is: dsgdb9nsd_n.xyz
     where n is an integer number.
     args:
         directory - Path from which xyz files needs to be found.
+        match - a matching string for the files. Else, all the files will be returned.
     returns:
         xyz_files - List of xyz files with names dsgdb9nsd_*.xyz after being sorted."""
-    xyz_files = []
+    allfiles = []
     for files in os.listdir(directory):
         # Take the xyz files which has 'dsgdb9nsd_' in their name
-        if fnmatch.fnmatch(files, 'dsgdb9nsd_*.xyz'):
-            xyz_files.append(os.path.abspath(os.path.join(directory, files)))
+        if fnmatch.fnmatch(files, match):
+            allfiles.append(os.path.abspath(os.path.join(directory, files)))
     # Check if the list xyz_files is empty. If it is empty, then program exits.
-    if not xyz_files:
-        print("No files with extension .xyz found in directory: ", directory)
+    if not allfiles:
+        print("No files with match %s found in directory: %s " % (match, directory))
         print("Program exit now.")
         sys.exit()
-    return sorted(xyz_files)
+    return sorted(allfiles)
+
+
+def get_dft_energies(logfile):
+    """This function takes a ADF logfile and return the dft energies as dictionary.
+    args:
+        logfile - ADF output file
+    returns:
+        dft_energies - dictionary of DFT energies. Keys as functional, value as energy in eV.
+    """
+    dft_energies = {}
+    with open(logfile, 'r') as flog:
+        for line in flog:
+            if "FR:" in line:
+                FR_cont = True
+                func = line[4:19].strip().upper()
+                en_ev = float(line.split("=")[1].split()[1])
+                dft_energies[func] = en_ev
+    if not FR_cont:
+        print ("No data found for DFT functional")
+        print ("The reason could be that the ADF log file prints the energy with different format.")
+    return dft_energies
 
 
 def mol_to_bonds_list(molobj, filename):
@@ -222,19 +245,20 @@ def mol_to_bonds_list(molobj, filename):
     return bonds_list
 
 
-def get_properties_combined(index, smiles, bonds_list):
+def get_properties_combined(index, smiles, chem_formula, bonds_list):
     """This function takes an index, smiles string and a list of bonds and return
     a dictionary with the proper key names. This key names will be used homogeneously
     in all the programs that follows.
     args:
         index - index of the molecule in the QM9_GMP2 dataset
         smiles - smiles string as calculated using the xyz2mol program
+        chem_formula - Formula as type string.
         bonds_list - A dictionary with all the bond names as keys and their numbers
                      in the molecule as values.
     returns:
         dictionary with keys as below.
     """
-    all_properties = {"index": index, "smiles": smiles}
+    all_properties = {"index": index, "smiles": smiles, "chemformula":chem_formula}
     return {**all_properties, **bonds_list}
 
 
@@ -264,55 +288,89 @@ def update_failed_indices(outputfile, indices):
     return
 
 
+def update_pd_df(inpdf, index=None, smiles=None, chemformula=None, bonds=None, energies=None):
+    """Function to update to dataframe
+    """
+    row_dict = {"index":index, "smiles":smiles, "chemformula":chemformula}
+    row_dict.update(bonds)
+    row_dict.update(energies)
+    df = pd.DataFrame(row_dict, index=[0])
+    newdf = pd.concat([inpdf, df])
+    return newdf
+
+
 def main():
     #
     # parsing arguments
     #
     parser = argparse.ArgumentParser("File to create bond list from xyz file.")
-    parser.add_argument('-xyzd', '--xyz_directory',
+    parser.add_argument('-xd', '--xyzd',
                         help="Location of the xyz directory. Default is current directory.",
-                        required=False, default="./")
+                        required=True)
+    parser.add_argument('-ld', '--dir_logfiles',
+                        help="Location of the directory from where the logfiles will be read.",
+                        required=True)
     parser.add_argument('-o', '--output', help="Name of the output file. Should end with csv",
-                        required=False, default="qm9_bonds.csv")
+                        required=False, default="qm9_bonds_energies.csv")
     parser.add_argument('-f', '--failed_file', help="File in which to update the indices where processing failed",
-                        required=False, default='failed_bonds.dat')
+                        required=False, default='failed_indices.dat')
 
 
     args = parser.parse_args()
-    xyz_direcoty = os.path.abspath(args.xyz_directory)
+    xyz_direcoty = os.path.abspath(args.xyzd)
+    log_dir = args.dir_logfiles
     output_csv = args.output
     failed_output = args.failed_file
     #
     # End of parsing input arguments
     #
-    
-    
-    
     failed_mols_indices = []
     print("Directory containing xyz files: ", xyz_direcoty)
-    xyzfiles = get_xyz_files(xyz_direcoty)
+    xyzfiles = get_files(xyz_direcoty, match='dsgdb9nsd_*.xyz')
+    logfiles = get_files(log_dir, match='*_xyz.out')
     print("Number of xyz files: ", len(xyzfiles))
+    df = pd.DataFrame()
     for i in range(len(xyzfiles)):
-        files = xyzfiles[i]
-        index = os.path.basename(files).split("/")[-1].split("_")[1].split('.')[0]
-        mols = get_smiles_from_xyz(files)
+        ixyzfile = xyzfiles[i]
+        ilogfile = logfiles[i]
+        logindex = os.path.basename(ilogfile).split("_")[0]
+        xyzindex = os.path.basename(ixyzfile).split("_")[1].split(".")[0]
+        if logindex != xyzindex:
+            print("The index in logfile and xyzfiles are not same.")
+            print("Xyzfile: ", ixyzfile)
+            print("logfile: ", ilogfile)
+            break
+        print(logindex, ilogfile, ixyzfile)
+        dft_energies = get_dft_energies(os.path.abspath(ilogfile))
+        if not dft_energies:
+            print("No dft energies found for index: ", logindex)
+            failed_mols_indices.append(logindex)
+            continue
+            # Get the smile string using the xyz2mol module.
+        mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
             print("Failed to convert xyz to smiles string: ", files)
             failed_mols_indices.append(index)
             continue
-        bonds_list = mol_to_bonds_list(mols[0], files)
+        bonds_list = mol_to_bonds_list(mols[0], ixyzfile)
         smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
-        # index being taken from the xyz file name.
-        property_value_pair = get_properties_combined(index, smiles, bonds_list)
-        df = pd.DataFrame(property_value_pair, index=[0])
-        if i == 0:
-            headers = property_value_pair.keys()
-            df.to_csv(output_csv, mode='w', sep=",", index=False, header=headers, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
-        else:
-            df.to_csv(output_csv, mode='a', sep=",", index=False, header=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
+        chemformula = CalcMolFormula(mols[0])
+        #
+        # Write everything to csv file
+        #
+        df = update_pd_df(df, index=logindex, smiles=smiles, chemformula=chemformula, bonds=bonds_list, energies=dft_energies)
+        #property_value_pair = get_properties_combined(index, smiles, chemformula, bonds_list)
+        #df = pd.DataFrame(property_value_pair, index=[0])
+        #if i == 0:
+        #    headers = property_value_pair.keys()
+        #    df.to_csv(output_csv, mode='w', sep=",", index=False, header=headers, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
+        #else:
+        #    df.to_csv(output_csv, mode='a', sep=",", index=False, header=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
 
         if (i % 10000) == 0:
             print("Number of molecules converted: ", i)
+    #write to csv file.
+    df.to_csv(output_csv, sep=",", index=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
     update_failed_indices(failed_output, failed_mols_indices)
     return
 
