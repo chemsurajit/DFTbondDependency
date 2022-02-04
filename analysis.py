@@ -33,10 +33,15 @@ def count_bond_change(csv_files, output=None):
     print(os.getcwd())
     total_sumed_counter = Counter({})
     for csvf in csv_files:
-        for chunk in pd.read_csv(csvf, header=0, chunksize=100000):
+        nchunk = 0
+        print("Reading csv file: ", csvf)
+        for chunk in pd.read_csv(csvf, chunksize=100000):
             abs_sum_counter = Counter(chunk[bonds_list].abs().sum(axis=0).to_dict())
             total_sumed_counter.update(abs_sum_counter)
-        break
+            nchunk += 1
+            if nchunk%5 == 0:
+                print("Nchunk: ", nchunk)
+        print("Done reading csvfile: ", csvf)
     # save to csv file with format:
     # bonds,count
     with open(output, 'w') as fp:
