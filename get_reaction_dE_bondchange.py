@@ -1,6 +1,6 @@
+import sys
 import argparse
 import csv
-
 import pandas as pd
 import time
 
@@ -26,16 +26,18 @@ dft_functionals = ['G4MP2', 'KCIS-MODIFIED', 'KCIS-ORIGINAL', 'PKZB',
                    'M06', 'M06-2X', 'B3LYP-D']
 
 
+
 def build_csv_for_reactions(start_line_no, nline, reaction_csv_file, molecule_csv_file, outputcsv):
-    pd_molecule = pd.read_csv(molecule_csv_file)
-    pd_reactions = pd.read_csv(reaction_csv_file)
     start_row = start_line_no
     end_row = start_row + nline
+    pd_reactions = pd.read_csv(reaction_csv_file, header=0, skiprows=range(1,start_row), nrows=nline )
+    #sliced_rean_pd = pd_reactions.loc[start_row:end_row]
+    pd_molecule = pd.read_csv(molecule_csv_file)
     bonds_energy_funcs_list = bonds_list + dft_functionals
     mode = 'w'
     rindex_for_csv = start_row
-    id_recursive = 0
-    for index, row in pd_reactions.loc[start_row:end_row].iterrows():
+    #whole_df = pd.DataFrame()
+    for index, row in pd_reactions.iterrows():
         loop_st = time.time()
         reactant_index = row.reactindex
         pdt_index = row.pdtindex
@@ -43,17 +45,20 @@ def build_csv_for_reactions(start_line_no, nline, reaction_csv_file, molecule_cs
         pdt_row = pd_molecule.loc[pd_molecule['index'] == pdt_index]
         reactant_smi = reactant_row["smiles"].values[0]
         pdt_smi = pdt_row["smiles"].values[0]
-        rtn_prop_diff = pdt_row[bonds_energy_funcs_list] - reactant_row[bonds_energy_funcs_list]
-        rtn_prop_diff["reactindex"], rtn_prop_diff["pdtindex"], rtn_prop_diff["react_smi"], rtn_prop_diff["pdt_smi"] = \
-            [reactant_index, pdt_index, reactant_smi, pdt_smi]
+        rtn_prop_diff = pdt_row[bonds_energy_funcs_list] - reactant_row[bonds_energy_funcs_list].values
+        rtn_prop_diff["recursive_id"], rtn_prop_diff["reactionindex"], rtn_prop_diff["reactantindex"], rtn_prop_diff["pdtindex"], rtn_prop_diff["react_smi"], rtn_prop_diff["pdt_smi"] = \
+            [index, rindex_for_csv, reactant_index, pdt_index, reactant_smi, pdt_smi]
+        #whole_df = whole_df.append(rtn_prop_diff)
         if mode == 'w':
             rtn_prop_diff.to_csv(outputcsv, mode=mode, sep=",", index=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
-            mode = 'a'
         if mode == 'a':
             rtn_prop_diff.to_csv(outputcsv, mode=mode, sep=",", index=False, header=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
         rindex_for_csv += 1
-        id_recursive += 1
+        mode = 'a'
         print("Loop timing: ", time.time()-loop_st)
+        if (index%10000) == 0:
+            print("Index: ", index)
+    #whole_df.to_csv(outputcsv, mode='w', sep=",", index=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
     return
 
 
@@ -62,23 +67,29 @@ def main():
     # parsing arguments
     #
     parser = argparse.ArgumentParser("File to generate reactions with the energy, bonds etc.")
-    parser.add_argument('-r', '--reaction_csv', help="CSV file location (reactions.csv)", required=True)
-    parser.add_argument('-m', '--molecule', help="CSV file containing molecular bond and energy data", required=True)
+    parser.add_argument('-r', '--reaction_csv', help="CSV file location (reactions.csv)", required=False)
+    parser.add_argument('-m', '--molecule', help="CSV file containing molecular bond and energy data", required=False)
     parser.add_argument('-o', '--output', help="File name for the output csv file.", required=False,
                         default="core.csv")
     parser.add_argument('-sl', '--start_line', help="Line number of the starting for reactions csv file.", required=False,
                         default=0)
     parser.add_argument('-nl', '--nline', help="How many lines to be read from the reactions csv file.", required=False,
-                        default=200)
+                        default=1000)
     args = parser.parse_args()
     reaction_csv_file = args.reaction_csv
+    #reaction_csv_file = "../reactions.csv"
     molecule_csv_file = args.molecule
+    #molecule_csv_file = "../qm9_bonds_energies.csv"
     output_csv_file = args.output
-    start_line_no = args.start_line
-    nlines = args.nline
+    #output_csv_file = "core.csv"
+    start_line_no = int(args.start_line)
+    #start_line_no = int(sys.argv[1])
+    nlines = int(args.nline)
+    #nlines = int(sys.argv[2])
     #
     # parsing done
     #
+    print("start line no: ", start_line_no)
     build_csv_for_reactions(start_line_no, nlines, reaction_csv_file, molecule_csv_file, output_csv_file)
     print("Job finished.")
     print("-------------")

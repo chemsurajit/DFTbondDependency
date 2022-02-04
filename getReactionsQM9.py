@@ -49,6 +49,8 @@ def main():
     #
     mol_csv_data = pd.read_csv(molecule_csv_file, usecols=["index", "smiles", "chemformula"])
     find_reactions(mol_csv_data, output=output_csv_file, st=st)
+    print("Finding reaction completed.")
+    print("Job finished.")
     return
 
 
