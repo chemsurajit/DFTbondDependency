@@ -65,15 +65,11 @@ def plot_zero_bond(csv_files, output=None, dft_func=None):
             for chunk in pd.read_csv(csvf, chunksize=100000):
                 nchunk += 1
                 df = chunk.dropna(axis=0, how='any')
-                #selected_columns_df = df[["reactionindex", dft_func.upper(), "G4MP2"]]
-                #selected_columns_df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_func.upper())]
                 df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_func.upper())]
                 if mode == 'w':
-                    df.to_csv(output, mode=mode, index=False, columns = selected_columns)
-                    #selected_columns_df.to_csv(output, mode=mode, index=False)
+                    df.to_csv(output, mode=mode, index=False, columns=selected_columns)
                 elif mode == 'a':
                     df.to_csv(output, mode=mode, index=False, header=False, columns=selected_columns)
-                    #selected_columns_df.to_csv(output, mode=mode, index=False, header=False)
                 mode = 'a'
                 if nchunk % 10 == 0:
                     print("Nchunk: ", nchunk)
