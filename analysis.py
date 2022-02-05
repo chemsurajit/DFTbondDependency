@@ -2,7 +2,6 @@ import argparse
 import glob
 import sys
 import os
-import numpy as np
 import pandas as pd
 from collections import Counter
 
@@ -41,7 +40,7 @@ def count_bond_change(csv_files, output=None):
             abs_sum_counter = Counter(df[bonds_list].abs().sum(axis=0).to_dict())
             total_sumed_counter.update(abs_sum_counter)
             nchunk += 1
-            if nchunk%5 == 0:
+            if nchunk % 5 == 0:
                 print("Nchunk: ", nchunk)
         print("Done reading csvfile: ", csvf)
     # save to csv file with format:
@@ -54,6 +53,27 @@ def count_bond_change(csv_files, output=None):
 
 
 def plot_zero_bond(csv_files, output=None, dft_func=None):
+    print("CWD: ", os.getcwd())
+    mode = 'w'
+    if dft_func is None:
+        print("No dft functional is supplied to calculate DFT errors.")
+    else:
+        for csvf in csv_files:
+            nchunk = 0
+            print("Reading csv file: ", csvf)
+            for chunk in pd.read_csv(csvf, chunksize=100000):
+                nchunk += 1
+                df = chunk.dropna(axis=0, how='any')
+                selected_columns_df = df[["reactionindex", dft_func.upper(), "G4MP2"]]
+                selected_columns_df["dE"] = df["G4MP2"] - df[dft_func.upper()]
+                if mode == 'w':
+                    selected_columns_df.to_csv(output, mode=mode, index=False)
+                elif mode == 'a':
+                    selected_columns_df.to_csv(output, mode=mode, index=False, header=False)
+                mode = 'a'
+                if nchunk % 10 == 0:
+                    print("Nchunk: ", nchunk)
+            print("Reading complete for file: ", csvf)
     return
 
 
@@ -72,28 +92,36 @@ def main():
     parser = argparse.ArgumentParser("Analysis script for the reaction data.")
     parser.add_argument("-b", "--bond_change", help="To plot the number of bond change for \
                         all the reactions for each type of bonds", action='store_true')
+
     parser.add_argument("-d", "--data_dir", help="Path where the Reactions_n.csv files are kept. \
                         default, current directory.", default="./")
-    parser.add_argument("-l", "--limit", required=False, help="Plotting the limitation due to \
-                        zero bond corrected DFT errors.")
-    parser.add_argument('-f', '--dft_functional', required='--limit' in sys.argv, help="Name of the dft functional \
+
+    parser.add_argument("-z", "--zero_de", help="To create a csv file for dE(DFT error) \
+                        for reactions with zero bond change.", action='store_true')
+
+    parser.add_argument('-f', '--dft_functional', required='--zero_de' in sys.argv, help="Name of the dft functional \
                         from which to calculate errors in reaction energies. Required only if --limit is used.")
-    parser.add_argument('-o', '--output', required=False, help="The output to be printed. It needs \
-                        to be image format file.", default="bond_counts.csv")
+
+    parser.add_argument('-o', '--output', required=True, help="The output to be printed. It needs to be image format file.")
+
     args = parser.parse_args()
     csv_dir = args.data_dir
     csv_files = get_csv_files(csv_dir)
-    print(csv_files)
     #
     # calling of functions
     if args.bond_change:
+        print("Calculating bond change for all the reactions")
         output = args.output
         if not output.endswith(".csv"):
-            print("Only eps file allowed as output image file for matplotlib.")
+            print("Only csv file allowed as output data file.")
             sys.exit()
         count_bond_change(csv_files, output=output)
-    if args.limit:
+    if args.zero_de:
+        print("Calculating DFT error for reactions with zero bond change.")
+        output = args.output
         dft_functional = args.dft_functional
+        if not output.endswith(".csv"):
+            print("Only csv files allowed as output data file")
         plot_zero_bond(csv_files, output=output, dft_func=dft_functional)
     return
 
