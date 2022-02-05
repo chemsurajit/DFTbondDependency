@@ -58,18 +58,22 @@ def plot_zero_bond(csv_files, output=None, dft_func=None):
     if dft_func is None:
         print("No dft functional is supplied to calculate DFT errors.")
     else:
+        selected_columns = ["reactionindex", "G4MP2", dft_func.upper(), "dE"]
         for csvf in csv_files:
             nchunk = 0
             print("Reading csv file: ", csvf)
             for chunk in pd.read_csv(csvf, chunksize=100000):
                 nchunk += 1
                 df = chunk.dropna(axis=0, how='any')
-                selected_columns_df = df[["reactionindex", dft_func.upper(), "G4MP2"]]
-                selected_columns_df["dE"] = df["G4MP2"] - df[dft_func.upper()]
+                #selected_columns_df = df[["reactionindex", dft_func.upper(), "G4MP2"]]
+                #selected_columns_df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_func.upper())]
+                df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_func.upper())]
                 if mode == 'w':
-                    selected_columns_df.to_csv(output, mode=mode, index=False)
+                    df.to_csv(output, mode=mode, index=False, columns = selected_columns)
+                    #selected_columns_df.to_csv(output, mode=mode, index=False)
                 elif mode == 'a':
-                    selected_columns_df.to_csv(output, mode=mode, index=False, header=False)
+                    df.to_csv(output, mode=mode, index=False, header=False, columns=selected_columns)
+                    #selected_columns_df.to_csv(output, mode=mode, index=False, header=False)
                 mode = 'a'
                 if nchunk % 10 == 0:
                     print("Nchunk: ", nchunk)
