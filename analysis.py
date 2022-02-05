@@ -2,7 +2,6 @@ import argparse
 import glob
 import sys
 import os
-
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -38,8 +37,8 @@ def count_bond_change(csv_files, output=None):
         nchunk = 0
         print("Reading csv file: ", csvf)
         for chunk in pd.read_csv(csvf, chunksize=100000):
-            np.argmin(chunk[bonds_list].applymap(np.isreal).all(1))
-            abs_sum_counter = Counter(chunk[bonds_list].abs().sum(axis=0).to_dict())
+            df = chunk.dropna(axis=0, how='any')
+            abs_sum_counter = Counter(df[bonds_list].abs().sum(axis=0).to_dict())
             total_sumed_counter.update(abs_sum_counter)
             nchunk += 1
             if nchunk%5 == 0:
