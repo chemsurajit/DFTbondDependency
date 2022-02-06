@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import argparse
 from sklearn.linear_model import LinearRegression
+import statsmodels.api as sma
 from scipy import stats
 
 
@@ -13,6 +14,31 @@ bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
 
 
 def compute_statmodel_lr(csv_files, dft_functional, output):
+    val_x = []
+    val_y = []
+    for csvf in csv_files:
+        nchunk = 0
+        print("Reading csv file: ", csvf)
+        for chunk in pd.read_csv(csvf, chunksize=100000):
+            nchunk += 1
+            df = chunk.dropna(axis=0, how='any')
+            # remove all the reactions where there is no bond changes:
+            df = df.loc[(df[bonds_list].abs().sum(axis=1) != 0)]
+            df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_functional.upper())]
+            _val_x = df[bonds_list].values.tolist()
+            if len(_val_x) > 0:
+                val_x.extend(_val_x)
+                val_y.extend(df["dE"].tolist())
+            if nchunk%10 == 0:
+                print("Nchunk: ", nchunk)
+        print("Done reading file: ", csvf)
+    if (len(val_x) > 0) and (len(val_y) > 0):
+        val_x = np.array(val_x)
+        val_y = np.array(val_y)
+        val_x2 = sma.add_constant(val_x)
+        est = sma.OLS(val_y, val_x2)
+        est2 = est.fit()
+        print(est2.summary())
     return
 
 
