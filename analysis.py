@@ -52,7 +52,7 @@ def count_bond_change(csv_files, output=None):
     return
 
 
-def plot_zero_bond(csv_files, output=None, dft_func=None):
+def calculate_zero_bond(csv_files, output=None, dft_func=None):
     print("CWD: ", os.getcwd())
     mode = 'w'
     if dft_func is None:
@@ -65,6 +65,7 @@ def plot_zero_bond(csv_files, output=None, dft_func=None):
             for chunk in pd.read_csv(csvf, chunksize=100000):
                 nchunk += 1
                 df = chunk.dropna(axis=0, how='any')
+                df = df.loc[(df[bonds_list].abs().sum(axis=1) == 0)]
                 df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_func.upper())]
                 if mode == 'w':
                     df.to_csv(output, mode=mode, index=False, columns=selected_columns)
@@ -122,7 +123,9 @@ def main():
         dft_functional = args.dft_functional
         if not output.endswith(".csv"):
             print("Only csv files allowed as output data file")
-        plot_zero_bond(csv_files, output=output, dft_func=dft_functional)
+            parser.print_help()
+            sys.exit()
+        calculate_zero_bond(csv_files, output=output, dft_func=dft_functional)
     return
 
 
