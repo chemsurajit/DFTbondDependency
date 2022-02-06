@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import argparse
 from sklearn.linear_model import LinearRegression
+from scipy import stats
 
 
 bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
@@ -12,14 +13,50 @@ bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
 
 
 def compute_sklearn_linear_regression(csv_files, dft_functional, output):
+    val_x = []
+    val_y = []
     for csvf in csv_files:
         nchunk = 0
+        print("Reading csv file: ", csvf)
         for chunk in pd.read_csv(csvf, chunksize=100000):
             nchunk += 1
             df = chunk.dropna(axis=0, how='any')
             # remove all the reactions where there is no bond changes:
-
+            df = df.loc[(df[bonds_list].abs().sum(axis=1) != 0)]
             df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_functional.upper())]
+            _val_x = df[bonds_list].values.tolist()
+            if len(_val_x) > 0:
+                val_x.extend(_val_x)
+                val_y.extend(df["dE"].tolist())
+            if nchunk%10 == 0:
+                print("Nchunk: ", nchunk)
+        print("Done reading file: ", csvf)
+    if (len(val_x) > 0) and (len(val_y) > 0):
+        val_x = np.array(val_x)
+        val_y = np.array(val_y)
+        print("Max and min of x: ", np.amax(val_x), np.amin(val_x))
+        print("Max and min of y: ", np.amax(val_y), np.amin(val_y))
+        reg = LinearRegression().fit(val_x, val_y)
+        print("Regression score: ", reg.score(val_x, val_y))
+        print("The intercept: ", reg.intercept_)
+        #
+        # Calculation of P values.
+        # source: https://stackoverflow.com/questions/27928275/find-p-value-significance-in-scikit-learn-linearregression
+        params = np.append(reg.intercept_, reg.coef_)
+        predictions = reg.predict(val_x)
+        newX = np.append(np.ones((len(val_x),1)), val_x, axis=1)
+        MSE = (sum((val_y-predictions)**2))/(len(newX)-len(newX[0]))
+        var_b = MSE*(np.linalg.inv(np.dot(newX.T,newX)).diagonal())
+        sd_b = np.sqrt(var_b)
+        ts_b = params/ sd_b
+        p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
+        myDF3 = pd.DataFrame()
+        myDF3["Coefficients"],myDF3["Standard Errors"],myDF3["t values"],myDF3["Probabilities"] = [params,sd_b,ts_b,p_values]
+        myDF3.to_csv(output)
+    else:
+        print("Length of the x and y not greater than zero.")
+        print("Length x: ", len(val_x))
+        print("Length y: ", len(val_y))
     return
 
 
