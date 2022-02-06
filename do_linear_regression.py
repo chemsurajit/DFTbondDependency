@@ -12,6 +12,10 @@ bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
               'N_N_A', 'N_s_H']
 
 
+def compute_statmodel_lr(csv_files, dft_functional, output):
+    return
+
+
 def compute_sklearn_linear_regression(csv_files, dft_functional, output):
     val_x = []
     val_y = []
@@ -39,6 +43,9 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         reg = LinearRegression().fit(val_x, val_y)
         print("Regression score: ", reg.score(val_x, val_y))
         print("The intercept: ", reg.intercept_)
+        list_coef = reg.coef_.tolist()
+        print ("bonds \t coefficient")
+        print("\n".join("{}\t{}".format(x, y) for x, y in zip(bonds_list, list_coef)))
         #
         # Calculation of P values.
         # source: https://stackoverflow.com/questions/27928275/find-p-value-significance-in-scikit-learn-linearregression
@@ -51,8 +58,8 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         ts_b = params/ sd_b
         p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
         myDF3 = pd.DataFrame()
-        myDF3["Coefficients"],myDF3["Standard Errors"],myDF3["t values"],myDF3["Probabilities"] = [params,sd_b,ts_b,p_values]
-        myDF3.to_csv(output)
+        myDF3["bonds"], myDF3["Coefficients"],myDF3["Standard Errors"],myDF3["t values"],myDF3["Probabilities"] = [bonds_list, params,sd_b,ts_b,p_values]
+        myDF3.to_csv(output, index=False)
     else:
         print("Length of the x and y not greater than zero.")
         print("Length x: ", len(val_x))
@@ -92,7 +99,8 @@ def main():
         parser.print_help()
         sys.exit()
 
-    compute_sklearn_linear_regression(csv_files, dft_functional, output)
+    #compute_sklearn_linear_regression(csv_files, dft_functional, output)
+    compute_statmodel_lr(csv_files, dft_functional, output)
 
     return
 
