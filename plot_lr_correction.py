@@ -22,7 +22,7 @@ def get_csv_files(csv_dir):
     return files
 
 
-def get_energy_data(csv_files, lr_coeff_csv, dft_functional, bonds_coeffs = None):
+def get_energy_data(csv_files, dft_functional, bonds_coeffs = None):
     """Returns:
                dE, dE_corrected
     """
@@ -40,10 +40,16 @@ def get_energy_data(csv_files, lr_coeff_csv, dft_functional, bonds_coeffs = None
             # remove all the reactions where there is no bond changes:
             df = df.loc[(df[all_bonds].abs().sum(axis=1) != 0)]
             dE_np = df.loc[:, ("G4MP2")] - df.loc[:, (dft_functional.upper())].to_numpy()
-            print(dE_np)
+            dE += dE_np.to_list()
+            for bond, coef in bonds_coeffs.items():
+                bond_value = df[bond].to_numpy()
+                dE_np -= coef * bond_value
+            dE_corrected += dE_np.to_list()
+            print(dE)
+            print(dE_corrected)
             break
         break
-    return 1, 2
+    return dE, dE_corrected
 
 
 def save_to_csv(dE, dE_corrected, output=None):
@@ -64,7 +70,7 @@ def main():
 
     csv_files = get_csv_files(args.csv_directory)
     bonds_lr_pd = pd.read_csv(args.lr_coeff, index_col=False)
-    dE, dE_corrected = get_energy_data(csv_files, args.lr_coeff, args.dft_functional, bonds_coeffs=dict(zip(bonds_lr_pd["bonds"], bonds_lr_pd["Coefficients"])))
+    dE, dE_corrected = get_energy_data(csv_files, args.dft_functional, bonds_coeffs=dict(zip(bonds_lr_pd["bonds"], bonds_lr_pd["Coefficients"])))
     save_to_csv(dE, dE_corrected, output=output+".csv")
     pass
 
