@@ -45,8 +45,8 @@ def get_energy_data(csv_files, dft_functional, bonds_coeffs = None):
                 bond_value = df[bond].to_numpy()
                 dE_np -= coef * bond_value
             dE_corrected += dE_np.to_list()
-            print(dE)
-            print(dE_corrected)
+            print(min(dE), max(dE))
+            print(min(dE_corrected), max(dE_corrected))
             break
         break
     return dE, dE_corrected
