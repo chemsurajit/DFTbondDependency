@@ -29,6 +29,7 @@ def get_energy_data(csv_files, dft_functional, bonds_coeffs = None):
     """
     dE = []
     dE_corrected = []
+    reaction_ids = []
     chunksize = 100000
     print("bonds list: ", bonds_coeffs)
     print("Starting to read csv files")
@@ -46,17 +47,18 @@ def get_energy_data(csv_files, dft_functional, bonds_coeffs = None):
                 bond_value = df[bond].to_numpy()
                 dE_np -= coef * bond_value
             dE_corrected += dE_np.to_list()
+            reaction_ids += df["reactionindex"].tolist()
             if nchunk%10 == 0:
                 print("Nchunk: ", nchunk)
-    return dE, dE_corrected
+    return reaction_ids, dE, dE_corrected
 
 
-def save_to_csv(dE, dE_corrected, dft_functional, output=None):
+def save_to_csv(reactions_id, dE, dE_corrected, dft_functional, output=None):
     print("Writing energy correction data to csv file: ", output)
     with open(output, 'w') as fp:
         writer = csv.writer(fp)
-        writer.writerow(["dE" + str(dft_functional), "dE_corrected" + str(dft_functional)])
-        writer.writerows(zip(dE, dE_corrected))
+        writer.writerow(["reactionindex", "dE_" + str(dft_functional), "dE_corrected_" + str(dft_functional)])
+        writer.writerows(zip(reactions_id, dE, dE_corrected))
     return
 
 
@@ -75,8 +77,8 @@ def main():
     csv_files = get_csv_files(args.csv_directory)
     bonds_lr_pd = pd.read_csv(args.lr_coeff, index_col=False)
 
-    dE, dE_corrected = get_energy_data(csv_files, dft_functional, bonds_coeffs=dict(zip(bonds_lr_pd["bonds"], bonds_lr_pd["Coefficients"])))
-    save_to_csv(dE, dE_corrected, dft_functional, output=output+".csv")
+    reaction_ids, dE, dE_corrected = get_energy_data(csv_files, dft_functional, bonds_coeffs=dict(zip(bonds_lr_pd["bonds"], bonds_lr_pd["Coefficients"])))
+    save_to_csv(reaction_ids, dE, dE_corrected, dft_functional, output=output+".csv")
     pass
 
 
