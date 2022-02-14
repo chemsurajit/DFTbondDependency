@@ -22,14 +22,14 @@ def get_csv_files(csv_dir):
     return files
 
 
-def get_energy_data(csv_files, lr_coeff_csv, dft_functional, bonds_ceffs = None):
+def get_energy_data(csv_files, lr_coeff_csv, dft_functional, bonds_coeffs = None):
     """Returns:
                dE, dE_corrected
     """
     dE = []
     dE_corrected = []
     chunksize = 100000
-    print("bonds list: ", bonds_ceffs)
+    print("bonds list: ", bonds_coeffs)
     print("Starting to read csv files")
     for csvs in csv_files:
         nchunk =0
