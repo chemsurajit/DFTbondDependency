@@ -28,7 +28,14 @@ def get_energy_data(csv_files, lr_coeff_csv, dft_functional, bonds_list = None):
         nchunk =0
         print("Reading csv file: ", csvs)
         for chunk in pd.read_csv(csvs, chunksize=chunksize):
+            nchunk += 1
+            df = chunk.dropna(axis=0, how='any')
+            # remove all the reactions where there is no bond changes:
+            df = df.loc[(df[bonds_list].abs().sum(axis=1) != 0)]
+            dE_np = df.loc[:, ("G4MP2")] - df.loc[:, (dft_functional.upper())].to_numpy()
+            print(dE_np)
             break
+        break
     return 1, 2
 
 
