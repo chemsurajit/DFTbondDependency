@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import glob
 import pandas as pd
@@ -45,14 +46,15 @@ def get_energy_data(csv_files, dft_functional, bonds_coeffs = None):
                 bond_value = df[bond].to_numpy()
                 dE_np -= coef * bond_value
             dE_corrected += dE_np.to_list()
-            print(min(dE), max(dE))
-            print(min(dE_corrected), max(dE_corrected))
-            break
         break
     return dE, dE_corrected
 
 
-def save_to_csv(dE, dE_corrected, output=None):
+def save_to_csv(dE, dE_corrected, dft_functional, output=None):
+    with open(output, 'w') as fp:
+        writer = csv.writer(fp)
+        writer.writerow(["dE" + str(dft_functional), "dE_corrected" + str(dft_functional)])
+        writer.writerows(zip(dE, dE_corrected))
     return
 
 
@@ -67,11 +69,12 @@ def main():
                         required=True)
     args = parser.parse_args()
     output = args.name
-
+    dft_functional = args.dft_functional
     csv_files = get_csv_files(args.csv_directory)
     bonds_lr_pd = pd.read_csv(args.lr_coeff, index_col=False)
-    dE, dE_corrected = get_energy_data(csv_files, args.dft_functional, bonds_coeffs=dict(zip(bonds_lr_pd["bonds"], bonds_lr_pd["Coefficients"])))
-    save_to_csv(dE, dE_corrected, output=output+".csv")
+
+    dE, dE_corrected = get_energy_data(csv_files, dft_functional, bonds_coeffs=dict(zip(bonds_lr_pd["bonds"], bonds_lr_pd["Coefficients"])))
+    save_to_csv(dE, dE_corrected, dft_functional, output=output+".csv")
     pass
 
 
