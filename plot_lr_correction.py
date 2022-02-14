@@ -46,11 +46,13 @@ def get_energy_data(csv_files, dft_functional, bonds_coeffs = None):
                 bond_value = df[bond].to_numpy()
                 dE_np -= coef * bond_value
             dE_corrected += dE_np.to_list()
-        break
+            if nchunk%10 == 0:
+                print("Nchunk: ", nchunk)
     return dE, dE_corrected
 
 
 def save_to_csv(dE, dE_corrected, dft_functional, output=None):
+    print("Writing energy correction data to csv file: ", output)
     with open(output, 'w') as fp:
         writer = csv.writer(fp)
         writer.writerow(["dE" + str(dft_functional), "dE_corrected" + str(dft_functional)])
