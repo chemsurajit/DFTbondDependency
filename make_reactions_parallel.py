@@ -121,7 +121,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
-        logging.debug("pid, rowid: %d, %d" % (pid, rowid))
+        logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
         if counter == 0:
             print("dataframe start index: %d" % rowid)
             print(reaction_prop_diff.keys())
@@ -166,16 +166,12 @@ if __name__ == "__main__":
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
         print("calling function.")
-        #results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
         results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
         print("called function")
         for result in confut.as_completed(results):
-            try:
-                logging.info("Running worker: %s" % result)
-                main_func_results.append(result.result())
-            except Exception as ex:
-                logging.error("Failed job with detail: %s " % result)
-                pass
+            logging.info("Run complete worker: %s" % result)
+            main_func_results.append(result.result())
+            logging.info("run result all info: %s " % main_func_results)
     end = time.time()
     logging.info("JOB COMPLETED.")
     logging.info("PPID %s Completed in %s"%(os.getpid(), round(end-start,2)))
