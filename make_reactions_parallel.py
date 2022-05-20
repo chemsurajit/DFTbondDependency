@@ -160,7 +160,7 @@ if __name__ == "__main__":
     g4mp2_en = get_required_g4mp2_data(args.g4mp2_en)
     total_reaction_ids_pd = pd.read_csv(args.rid_csv,
                                         usecols=["reactindex","pdtindex"],
-                                        nrows=100000).dropna()
+                                        ).dropna()
     splitted_rid_pd = np.array_split(total_reaction_ids_pd, nprocs)
     # setup related to multiprocessing
     main_func_results = []
