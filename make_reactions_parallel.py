@@ -166,11 +166,13 @@ if __name__ == "__main__":
     start = time.time()
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
-        print("calling function.")
         results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
-        print("called function")
-        for future in confut.as_completed(results):
-            print(f'{future.result()}')
+    for future in confut.as_completed(results):
+        try:
+            main_func_results.append(future.result())
+        except Exception as ex:
+            logging.error("ERROR: %s" % str(ex))
+            pass
     end = time.time()
     logging.info("JOB COMPLETED.")
     logging.info("PPID %s Completed in %s"%(os.getpid(), round(end-start,2)))
