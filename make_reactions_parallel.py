@@ -114,7 +114,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         reactant_index = row.reactindex
         logging.debug("reactant index: %d" % reactant_index)
         pdt_index = row.pdtindex
-        logging.debug("pdt index: ", pdt_index)
+        logging.debug("pdt index: %d" % pdt_index)
         reactant_row = molecule_data_pd.loc[molecule_data_pd['index'] == reactant_index]
         print("react row: ", reactant_row)
         pdt_row = molecule_data_pd.loc[molecule_data_pd['index'] == pdt_index]
