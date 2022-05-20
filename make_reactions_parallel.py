@@ -112,20 +112,31 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     for rowid, row in rids_pd.iterrows():
         logging.debug("loopstart pid, rowid: %d, %d" % (pid, rowid))
         reactant_index = row.reactindex
+        logging.debug("reactant index: %d" % reactant_index)
         pdt_index = row.pdtindex
+        logging.debug("pdt index: %d" % pdt_index)
         reactant_row = molecule_data_pd.loc[molecule_data_pd['index'] == reactant_index]
+        logging.debug("react row: %s" % reactant_row)
         pdt_row = molecule_data_pd.loc[molecule_data_pd['index'] == pdt_index]
+        logging.debug("pdt row: %s" % pdt_row)
         react_smi = reactant_row["smiles"].values[0]
+        logging.debug("react_smi %s " % react_smi)
         pdt_smi = pdt_row["smiles"].values[0]
+        logging.debug("pdt_smi: %s" % pdt_smi)
         reaction_prop_diff = pdt_row[bonds_ens_cols] - reactant_row[bonds_ens_cols].values
+        logging.debug("reaction_prop_diff1: %s" % reaction_prop_diff)
         reaction_prop_diff["react_smi"], reaction_prop_diff["pdt_smi"] = [react_smi, pdt_smi]
+        logging.debug("reaction_prop_diff2: %s" % reaction_prop_diff)
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
+        logging.debug("reaction_prop_diff3: %s" % reaction_prop_diff)
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
+        logging.debug("reaction_prop_diff4: %s" % reaction_prop_diff)
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
+        logging.debug("reaction_prop_diff5: %s" % reaction_prop_diff)
         logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
         if counter == 0:
-            print("dataframe start index: %d" % rowid)
-            print(reaction_prop_diff.keys())
+            logging.info("New csv file will be created file name: " % output_csv_file)
+            logging.debug(reaction_prop_diff.keys())
             reaction_prop_diff.to_csv(output_csv_file,
                                       mode='w', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
@@ -135,7 +146,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
                                       mode='a', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       header=False, sep=",")
-            logging.debug("if finished")
+            logging.debug("file %s updated" % output_csv_file)
         if (counter+1) % 1000 == 0:
             logging.info("Read reactions with pid %s ppid %s:  %d" % (pid, ppid, counter))
         counter += 1
