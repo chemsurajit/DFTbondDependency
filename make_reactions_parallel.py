@@ -1,5 +1,6 @@
 import os
 import argparse
+import sys
 import time
 import pandas as pd
 import csv
@@ -171,7 +172,9 @@ if __name__ == "__main__":
         try:
             main_func_results.append(future.result())
         except Exception as ex:
-            logging.error("ERROR: %s" % str(ex))
+            ex_type, ex_obj, ex_trace = sys.exc_info()
+            line_number = ex_trace.tb_lineno
+            logging.error("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
             pass
     end = time.time()
     logging.info("JOB COMPLETED.")
