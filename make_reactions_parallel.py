@@ -169,15 +169,15 @@ if __name__ == "__main__":
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
         results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
-        for future in confut.as_completed(results):
+        for result in confut.as_completed(results):
             try:
-                main_func_results.append(future.result())
+                main_func_results.append(result.result())
             except Exception as ex:
                 # taken from: https://www.codegrepper.com/code-examples/python/python+exception+with+line+number
-                print("ERROR: ", str(ex))
-                ex_type, ex_obj, ex_trace = sys.exc_info()
-                line_number = ex_trace.tb_lineno
-                print("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
+                logging.error("ERROR: %s " % str(ex))
+                #ex_type, ex_obj, ex_trace = sys.exc_info()
+                #line_number = ex_trace.tb_lineno
+                #logging.error("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
                 pass
     end = time.time()
     logging.info("JOB COMPLETED.")
