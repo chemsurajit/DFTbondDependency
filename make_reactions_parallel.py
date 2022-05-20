@@ -155,6 +155,7 @@ if __name__ == "__main__":
     )
     outdir = os.path.abspath(args.out_dir)
     nprocs = args.nprocs
+    logging.info("Number of processors chose: %s" % nprocs)
     molecule_data_pd = get_required_mol_data(args.mol_data)
     g4mp2_en = get_required_g4mp2_data(args.g4mp2_en)
     total_reaction_ids_pd = pd.read_csv(args.rid_csv,
