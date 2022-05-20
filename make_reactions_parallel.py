@@ -16,11 +16,6 @@ bonds_list = [
 ]
 
 
-def compute_reaction_main(reaction_ids_db_chunk,
-                          molecule_data_pd,
-                          g4mp2_en_pd):
-    pass
-
 
 def get_required_mol_data(mol_data_file):
     """
@@ -102,6 +97,8 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     :param rids_pd, outid, molecules_pd, g4mp2_pd, outdir
     :return: Integer 0 upon completion.
     """
+    logging.info("The start index of the reaction slice: %d" % list(rids_pd.index.values)[0])
+    logging.info("The start index of the reaction slice: %d" % list(rids_pd.index.values)[-1])
     logging.debug("Inside process_reaction_data function")
     bonds_ens_cols = bonds_list + ["PBE","B3LYP-D","M06-2X"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(outid) + ".csv")
@@ -112,6 +109,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     #do stuff here.
     counter = 0
     for rowid, row in rids_pd.iterrows():
+        logging.debug("loopstart pid, rowid: %d, %d" % (pid, rowid))
         reactant_index = row.reactindex
         pdt_index = row.pdtindex
         reactant_row = molecule_data_pd.loc[molecule_data_pd['index'] == reactant_index]
@@ -123,7 +121,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
-        logging.debug("rowid------:", rowid)
+        logging.debug("pid, rowid: %d, %d" % (pid, rowid))
         if counter == 0:
             print("dataframe start index: %d" % rowid)
             print(reaction_prop_diff.keys())
@@ -177,7 +175,7 @@ if __name__ == "__main__":
                 logging.info("Running worker: %s" % result)
                 main_func_results.append(result.result())
             except Exception as ex:
-                logging.warning("Failed job with detail: %s " % result)
+                logging.error("Failed job with detail: %s " % result)
                 pass
     end = time.time()
     logging.info("JOB COMPLETED.")
