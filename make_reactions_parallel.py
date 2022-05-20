@@ -174,10 +174,10 @@ if __name__ == "__main__":
                 main_func_results.append(result.result())
             except Exception as ex:
                 # taken from: https://www.codegrepper.com/code-examples/python/python+exception+with+line+number
-                logging.error("ERROR: %s " % str(ex))
-                #ex_type, ex_obj, ex_trace = sys.exc_info()
-                #line_number = ex_trace.tb_lineno
-                #logging.error("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
+                logging.error("Exception occurs: %s " % str(ex))
+                ex_type, ex_obj, ex_trace = sys.exc_info()
+                line_number = ex_trace.tb_lineno
+                logging.error("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
                 pass
     end = time.time()
     logging.info("JOB COMPLETED.")
