@@ -141,6 +141,8 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     stop = time.time()
     completed_in = round(stop-start, 2)
     logging.info("Completed in: %s" % completed_in)
+    return
+
 
 if __name__ == "__main__":
     args = get_arguments()
@@ -167,8 +169,8 @@ if __name__ == "__main__":
         print("calling function.")
         results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
         print("called function")
-        for result in confut.as_completed(results):
-            print("JOBDONE:", result.result())
+    for future in confut.as_completed(results):
+        print(f'{future.result()}')
     end = time.time()
     logging.info("JOB COMPLETED.")
     logging.info("PPID %s Completed in %s"%(os.getpid(), round(end-start,2)))
