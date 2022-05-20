@@ -142,10 +142,11 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     stop = time.time()
     completed_in = round(stop-start, 2)
     logging.info("Completed in: %s" % completed_in)
-    return
+    return 0
 
 
 if __name__ == "__main__":
+    # multi threading credit: https://betterprogramming.pub/pandas-how-to-process-a-dataframe-in-parallel-make-pandas-lightning-fast-669978cf5356
     args = get_arguments()
     log_level = args.log.upper()
     logging.basicConfig(
@@ -172,9 +173,11 @@ if __name__ == "__main__":
         try:
             main_func_results.append(future.result())
         except Exception as ex:
+            # taken from: https://www.codegrepper.com/code-examples/python/python+exception+with+line+number
+            print("ERROR: ", str(ex))
             ex_type, ex_obj, ex_trace = sys.exc_info()
             line_number = ex_trace.tb_lineno
-            logging.error("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
+            print("ERROR: %s. LINE NO: %s" % (str(ex), line_number))
             pass
     end = time.time()
     logging.info("JOB COMPLETED.")
