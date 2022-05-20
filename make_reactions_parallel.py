@@ -97,13 +97,13 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     :param rids_pd, outid, molecules_pd, g4mp2_pd, outdir
     :return: Integer 0 upon completion.
     """
-    logging.info("The start index of the reaction slice: %d" % list(rids_pd.index.values)[0])
-    logging.info("The start index of the reaction slice: %d" % list(rids_pd.index.values)[-1])
     logging.debug("Inside process_reaction_data function")
     bonds_ens_cols = bonds_list + ["PBE","B3LYP-D","M06-2X"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(outid) + ".csv")
     pid = os.getpid()
     ppid = os.getppid()
+    logging.info("start index: %d, pid: %d" % (list(rids_pd.index.values)[0], pid))
+    logging.info("  End index: %d, pid: %d" % (list(rids_pd.index.values)[-1], pid))
     start = time.time()
     logging.info("pid, ppid info: %s %s" % (pid, ppid))
     #do stuff here.
@@ -162,7 +162,6 @@ if __name__ == "__main__":
     splitted_rid_pd = np.array_split(total_reaction_ids_pd, nprocs)
     # setup related to multiprocessing
     main_func_results = []
-    results = []
     start = time.time()
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
