@@ -5,6 +5,7 @@ import pandas as pd
 import csv
 import numpy as np
 import concurrent.futures as confut
+import logging
 
 bonds_list = [
             'C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
@@ -84,21 +85,26 @@ def get_arguments():
         default="../outputs",
         help="Directory where the Reactions_n.csv files will be saved."
     )
+    parser.add_argument(
+        '-log', '--log',
+        type=str,
+        required=False,
+        default="warning",
+        choices=["debug", "info", "warning", "error", "critical"],
+        help="Provide logging level. Default is warning."
+    )
     return parser.parse_args()
 
-#def process_reaction_data(rids_pd):
+
 def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     """
     The main function where all the reactions will be computed.
     :param rids_pd, outid, molecules_pd, g4mp2_pd, outdir
     :return: Integer 0 upon completion.
     """
-    print("inside function")
+    logging.debug("Inside process_reaction_data function")
     bonds_ens_cols = bonds_list + ["PBE","B3LYP-D","M06-2X"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(outid) + ".csv")
-    #rids_pd = args_tuple[1]
-    #molecule_data_pd = "tmp"
-    #g4mp2_en = "tmp"
     pid = os.getpid()
     ppid = os.getppid()
     start = time.time()
@@ -116,7 +122,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
-        print("rowid------:", rowid)
+        logging.debug("rowid------:", rowid)
         if counter == 0:
             print("dataframe start index: %d" % rowid)
             print(reaction_prop_diff.keys())
@@ -129,17 +135,23 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
                                       mode='a', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       header=False, sep=",")
-            print("if finished")
+            logging.debug("if finished")
         if (counter+1) % 1000 == 0:
-            print("Read reactions with pid %s ppid %s:  %d" % (pid, ppid, counter))
+            logging.info("Read reactions with pid %s ppid %s:  %d" % (pid, ppid, counter))
         counter += 1
     stop = time.time()
     completed_in = round(stop-start, 2)
-    print("Completed in: %s" % completed_in)
+    logging.info("Completed in: %s" % completed_in)
     return 0
 
 if __name__ == "__main__":
     args = get_arguments()
+    log_level = args.log.upper()
+    logging.basicConfig(
+        format="[%(asctime)s] %(levelname)s: %(message)s",
+        level=log_level,
+        datefmt="%H:%M:%S",
+    )
     outdir = os.path.abspath(args.out_dir)
     nprocs = args.nprocs
     molecule_data_pd = get_required_mol_data(args.mol_data)
@@ -152,6 +164,7 @@ if __name__ == "__main__":
     main_func_results = []
     results = []
     start = time.time()
+    logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
         print("calling function.")
         #results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
@@ -159,12 +172,11 @@ if __name__ == "__main__":
         print("called function")
         for result in confut.as_completed(results):
             try:
-                print("result instance: ", result)
+                logging.info("Running worker: %s" % result)
                 main_func_results.append(result.result())
             except Exception as ex:
-                print("test")
+                logging.warning("Failed job with detail: %s " % result)
                 pass
-    print(main_func_results)
     end = time.time()
-    print("JOB COMPLETED.")
-    print("PPID %s Completed in %s"%(os.getpid(), round(end-start,2)))
+    logging.info("JOB COMPLETED.")
+    logging.info("PPID %s Completed in %s"%(os.getpid(), round(end-start,2)))
