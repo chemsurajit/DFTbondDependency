@@ -142,7 +142,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     stop = time.time()
     completed_in = round(stop-start, 2)
     logging.info("Completed in: %s" % completed_in)
-    return 0
+    return
 
 
 if __name__ == "__main__":
