@@ -108,6 +108,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     pid = os.getpid()
     ppid = os.getppid()
     start = time.time()
+    logging.info("pid, ppid info: %s %s" % (pid, ppid))
     #do stuff here.
     counter = 0
     for rowid, row in rids_pd.iterrows():
