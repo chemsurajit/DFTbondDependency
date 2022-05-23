@@ -29,7 +29,8 @@ def get_required_mol_data(mol_data_file):
         "index", "smiles", "chemformula", "B3LYP-D", "PBE", "M06-2X"
     ]
     columns_to_read = bonds_list + other_columns
-    mol_data_required = pd.read_csv(mol_data_file, usecols=columns_to_read)
+    mol_data_required = pd.read_csv(mol_data_file, usecols=columns_to_read,
+                                    keep_default_na=False, na_values=np.nan)
     return mol_data_required.dropna()
 
 
@@ -38,11 +39,12 @@ def get_required_g4mp2_data(g4mp2_en_file):
     This function will read a csv file containing G4MP2 energy values and index
     as two must present columns and return those two columns as dictionary.
     :param g4mp2_en_file:
-    :return: G4MP2 dictionary as {index:energy}
+    :return: G4MP2 dataframe as {index:energy}
     """
-    pdata = pd.read_csv(g4mp2_en_file, usecols=["index","G4MP2"], index_col=False).dropna()
-    pd_as_dict = dict(zip(pdata.index, pdata.G4MP2))
-    return pd_as_dict
+    pdata = pd.read_csv(g4mp2_en_file, usecols=["index","G4MP2"],
+                        keep_default_na=False, na_values=np.nan,
+                        index_col="index").dropna()
+    return pdata
 
 
 def get_arguments():
@@ -115,9 +117,19 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         logging.debug("pid, reactant index: %d %d" % (pid, reactant_index))
         pdt_index = row.pdtindex
         logging.debug("pid, pdt index: %d %d" % (pid, pdt_index))
-        reactant_row = molecule_data_pd.loc[molecule_data_pd['index'] == reactant_index]
+        try:
+            reactant_row = molecule_data_pd.loc[molecule_data_pd['index'] == reactant_index]
+        except Exception as ex:
+            logging.warning("The following exception occurs: %s " % str(ex))
+            logging.warning("No row in molecule_data_pd for pid, reactant index: %d %d" % (pid, reactant_index))
+            continue
         logging.debug("pid, react row: %d %s" % (pid, reactant_row.to_string()))
-        pdt_row = molecule_data_pd.loc[molecule_data_pd['index'] == pdt_index]
+        try:
+            pdt_row = molecule_data_pd.loc[molecule_data_pd['index'] == pdt_index]
+        except Exception as ex:
+            logging.warning("The following exception occurs: %s " % str(ex))
+            logging.warning("No row in molecule_data_pd for pid, pdt index: %d %d" % (pid, pdt_index))
+            continue
         logging.debug("pid, pdt row: %d %s" % (pid, pdt_row.to_string()))
         react_smi = reactant_row["smiles"].values[0]
         logging.debug("pid, react_smi %d %s" % (pid, react_smi))
@@ -127,9 +139,19 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         logging.debug("pid, reaction_prop_diff1: %d %s" % (pid, reaction_prop_diff))
         reaction_prop_diff["react_smi"], reaction_prop_diff["pdt_smi"] = [react_smi, pdt_smi]
         logging.debug("pid, reaction_prop_diff2: %d, %s" % (pid, reaction_prop_diff.to_string()))
-        logging.debug("pid, g4mp2 en, reactindex: %d, %s, %d: " % (pid, g4mp2_en[reactant_index], reactant_index))
-        logging.debug("pid, g4mp2 en, pdtindex: %d, %s, %d: " %(pid, g4mp2_en[pdt_index], pdt_index))
-        reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
+        try:
+            react_g4mp2_en = g4mp2_en.loc[g4mp2_en["index"] == reactant_index, "G4MP2"].values[0]
+        except Exception as ex:
+            logging.warning("The following exception occurs: %s " % str(ex))
+            logging.warning("No G4MP2 energy found for pid, reactant index: %d %d" % (pid, reactant_index))
+            continue
+        try:
+            pdt_g4mp2_en = g4mp2_en.loc[g4mp2_en["index"] == pdt_index, "G4MP2"].values[0]
+        except Exception as ex:
+            logging.warning("The following exception occurs: %s " % str(ex))
+            logging.warning("No G4MP2 energy found for pid, pdtindex: %d %d" % (pid, pdt_index))
+            continue
+        reaction_prop_diff["G4MP2"] = pdt_g4mp2_en - react_g4mp2_en
         logging.debug("pid, reaction_prop_diff3: %d, %s" %(pid, reaction_prop_diff.to_string()))
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
         logging.debug("pid, reaction_prop_diff4: %d, %s" % (pid, reaction_prop_diff.to_string()))
@@ -145,7 +167,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
                                       quoting=csv.QUOTE_MINIMAL,
                                       sep=",")
         else:
-            logging.info("Else, append to csv pid, rowid: %s, %d, %d" % (output_csv_file, pid, rowid))
+            logging.debug("Else, append to csv pid, rowid: %s, %d, %d" % (output_csv_file, pid, rowid))
             reaction_prop_diff.to_csv(output_csv_file,
                                       mode='a', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
@@ -176,6 +198,7 @@ if __name__ == "__main__":
     g4mp2_en = get_required_g4mp2_data(args.g4mp2_en)
     total_reaction_ids_pd = pd.read_csv(args.rid_csv,
                                         usecols=["reactindex","pdtindex"],
+                                        keep_default_na=False, na_values=np.nan
                                         ).dropna()
     splitted_rid_pd = np.array_split(total_reaction_ids_pd, nprocs)
     # setup related to multiprocessing
