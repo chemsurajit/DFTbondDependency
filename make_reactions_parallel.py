@@ -43,7 +43,7 @@ def get_required_g4mp2_data(g4mp2_en_file):
     """
     pdata = pd.read_csv(g4mp2_en_file, usecols=["index","G4MP2"],
                         keep_default_na=False, na_values=np.nan,
-                        index_col="index").dropna()
+                        ).dropna()
     return pdata
 
 
