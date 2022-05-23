@@ -173,12 +173,12 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
                                       quoting=csv.QUOTE_MINIMAL,
                                       header=False, sep=",")
             logging.debug("file %s updated" % output_csv_file)
-        if (counter+1) % 1000 == 0:
-            logging.info("Read reactions with pid %s ppid %s:  %d" % (pid, ppid, counter))
+        if (counter+1) % 100000 == 0:
+            logging.info("Converted: %d reactions to %s with pid %d" % (counter, output_csv_file, pid))
         counter += 1
     stop = time.time()
-    completed_in = round(stop-start, 2)
-    logging.info("Completed in: %s" % completed_in)
+    completed_in = round((stop-start)/3600.0, 2)
+    logging.info("Loop with pid %d completed in: %s hr" % (pid, completed_in))
     return
 
 
@@ -219,4 +219,4 @@ if __name__ == "__main__":
                 pass
     end = time.time()
     logging.info("JOB COMPLETED.")
-    logging.info("PPID %s Completed in %s"%(os.getpid(), round(end-start,2)))
+    logging.info("PPID %s Completed in %s hr" % (os.getpid(), round((end-start)/3600,2)))
