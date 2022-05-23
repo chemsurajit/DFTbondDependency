@@ -127,6 +127,8 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         logging.debug("pid, reaction_prop_diff1: %d %s" % (pid, reaction_prop_diff))
         reaction_prop_diff["react_smi"], reaction_prop_diff["pdt_smi"] = [react_smi, pdt_smi]
         logging.debug("pid, reaction_prop_diff2: %d, %s" % (pid, reaction_prop_diff.to_string()))
+        logging.debug("pid, g4mp2 en, reactindex: %d, %s, %d: " % (pid, g4mp2_en[reactant_index], reactant_index))
+        logging.debug("pid, g4mp2 en, pdtindex: %d, %s, %d: " %(pid, g4mp2_en[pdt_index], pdt_index))
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
         logging.debug("pid, reaction_prop_diff3: %d, %s" %(pid, reaction_prop_diff.to_string()))
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
@@ -136,12 +138,14 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
         if counter == 0:
             logging.info("New csv file will be created file name: %s" % output_csv_file)
+            logging.debug("csv, pid, rowid in if: %s, %d, %d" %(output_csv_file, pid, rowid))
             logging.debug(reaction_prop_diff.keys())
             reaction_prop_diff.to_csv(output_csv_file,
                                       mode='w', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       sep=",")
         else:
+            logging.info("Else, append to csv pid, rowid: %s, %d, %d" % (output_csv_file, pid, rowid))
             reaction_prop_diff.to_csv(output_csv_file,
                                       mode='a', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
