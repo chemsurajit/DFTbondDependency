@@ -126,13 +126,13 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         reaction_prop_diff = pdt_row[bonds_ens_cols] - reactant_row[bonds_ens_cols].values
         logging.debug("pid, reaction_prop_diff1: %d %s" % (pid, reaction_prop_diff))
         reaction_prop_diff["react_smi"], reaction_prop_diff["pdt_smi"] = [react_smi, pdt_smi]
-        print("reaction_prop_diff2: ", reaction_prop_diff)
+        logging.debug("pid, reaction_prop_diff2: %d, %s" % (pid, reaction_prop_diff.to_string()))
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
-        print("reaction_prop_diff3: ", reaction_prop_diff)
+        logging.debug("pid, reaction_prop_diff3: %d, %s" %(pid, reaction_prop_diff.to_string()))
         reaction_prop_diff["chemformula"] = reactant_row["chemformula"].values[0]
-        print("reaction_prop_diff4: ", reaction_prop_diff)
+        logging.debug("pid, reaction_prop_diff4: %d, %s" % (pid, reaction_prop_diff.to_string()))
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
-        print("reaction_prop_diff5: ", reaction_prop_diff)
+        logging.debug("pid, reaction_prop_diff5: %d, %s" % (pid, reaction_prop_diff.to_string()))
         logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
         if counter == 0:
             logging.info("New csv file will be created file name: %s" % output_csv_file)
