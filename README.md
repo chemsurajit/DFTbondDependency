@@ -32,4 +32,12 @@ This script will create the csv files described above from the log files inside 
 This script will create the csv file for the bond changes and reaction energies from the qm9_mols.csv, and reactions.csv files.
 It additionally neads a csv file containing the QM9 molecular indices and the G4MP2 energy values (Which is provided as a supporting info in the paper: <link>)
 
+4) do_lr_regression.py
+This script will perform the linear regression described in paper <link> using the data and provide the coefficients in a csv file.
+
+5) calculate_reaction_energy.py
+This script will calculate the reaction energy from the LR coefficients found by the above scrpt.
+It will correct the energy and provide the reaction energy in PBE/B3LYP-D/M06-2X and in G4MP2 level of theory.
+
+
 How to run:
