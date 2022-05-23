@@ -160,7 +160,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         logging.debug("pid, reaction_prop_diff5: %d, %s" % (pid, reaction_prop_diff.to_string()))
         logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
         if counter == 0:
-            logging.info("New csv file will be created file name: %s" % output_csv_file)
+            logging.info("New csv file will be created file name: %s, pid: %d" % (output_csv_file, pid))
             logging.debug("csv, pid, rowid in if: %s, %d, %d" %(output_csv_file, pid, rowid))
             logging.debug(reaction_prop_diff.keys())
             reaction_prop_diff.to_csv(output_csv_file,
