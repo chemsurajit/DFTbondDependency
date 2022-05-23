@@ -107,6 +107,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     ppid = os.getppid()
     logging.info("start index: %d, pid: %d" % (list(rids_pd.index.values)[0], pid))
     logging.info("  End index: %d, pid: %d" % (list(rids_pd.index.values)[-1], pid))
+    logging.info("pid: %d, nreaction to be processed: %d" % (pid, rids_pd.shape[0]))
     start = time.time()
     logging.info("pid, ppid info: %s %s" % (pid, ppid))
     #do stuff here.
