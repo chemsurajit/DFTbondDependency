@@ -110,7 +110,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     #do stuff here.
     counter = 0
     for rowid, row in rids_pd.iterrows():
-        logging.debug("loopstart pid, rowid: %d, %d" % (pid, rowid))
+        logging.debug("loopstart pid, rowid, row: %d, %d, %s" % (pid, rowid, row.to_string()))
         reactant_index = row.reactindex
         logging.debug("pid, reactant index: %d %d" % (pid, reactant_index))
         pdt_index = row.pdtindex
