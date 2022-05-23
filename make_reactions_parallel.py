@@ -112,19 +112,19 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     for rowid, row in rids_pd.iterrows():
         logging.debug("loopstart pid, rowid: %d, %d" % (pid, rowid))
         reactant_index = row.reactindex
-        logging.debug("reactant index: %d" % reactant_index)
+        logging.debug("pid, reactant index: %d %d" % (pid, reactant_index))
         pdt_index = row.pdtindex
-        logging.debug("pdt index: %d" % pdt_index)
+        logging.debug("pid, pdt index: %d %d" % (pid, pdt_index))
         reactant_row = molecule_data_pd.loc[molecule_data_pd['index'] == reactant_index]
-        print("react row: ", reactant_row)
+        logging.debug("pid, react row: %d %s" % (pid, reactant_row.to_string()))
         pdt_row = molecule_data_pd.loc[molecule_data_pd['index'] == pdt_index]
-        print("pdt row: %s" % pdt_row)
+        logging.debug("pid, pdt row: %d %s" % (pid, pdt_row.to_string()))
         react_smi = reactant_row["smiles"].values[0]
-        print("react_smi ", react_smi)
+        logging.debug("pid, react_smi %d %s" % (pid, react_smi))
         pdt_smi = pdt_row["smiles"].values[0]
-        print("pdt_smi: ", pdt_smi)
+        logging.debug("pid, pdt_smi: %d %s" % (pid, pdt_smi))
         reaction_prop_diff = pdt_row[bonds_ens_cols] - reactant_row[bonds_ens_cols].values
-        print("reaction_prop_diff1: ", reaction_prop_diff)
+        logging.debug("pid, reaction_prop_diff1: %d %s" % (pid, reaction_prop_diff))
         reaction_prop_diff["react_smi"], reaction_prop_diff["pdt_smi"] = [react_smi, pdt_smi]
         print("reaction_prop_diff2: ", reaction_prop_diff)
         reaction_prop_diff["G4MP2"] = g4mp2_en[pdt_index] - g4mp2_en[reactant_index]
