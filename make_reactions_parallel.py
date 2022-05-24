@@ -301,6 +301,11 @@ if __name__ == "__main__":
     # load the g4mp2 molecular data
     logging.info("loading %s ..." % args.g4mp2_en)
     g4mp2_en = get_required_g4mp2_data(args.g4mp2_en)
+    # modify the molecule_data_pd according to the indices of the G4MP2 energy.
+    logging.info("The molecule data will be taken for the indices of the G4MP2 database.")
+    g4mp2_indices = g4mp2_en["index"].to_list()
+    modified_mol_data_pd = molecule_data_pd.loc[molecule_data_pd["index"].isin(g4mp2_indices)]
+    del molecule_data_pd
     #total_reaction_ids_pd = pd.read_csv(args.rid_csv,
     #                                    usecols=["reactindex","pdtindex"],
     #                                    keep_default_na=False, na_values=np.nan
@@ -313,7 +318,7 @@ if __name__ == "__main__":
     start = time.time()
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
-        results = [executor.submit(proces_reaction_data_column, rid_pd, coreno, node_no, molecule_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
+        results = [executor.submit(proces_reaction_data_column, rid_pd, coreno, node_no, modified_mol_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
         for result in confut.as_completed(results):
             try:
                 main_func_results.append(result.result())
