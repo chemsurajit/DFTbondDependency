@@ -15,7 +15,7 @@ def get_arguments():
         help="csv file name of the file where reactant indices, and pdt indices are saved."
     )
     parser.add_argument(
-        "--nnodes",
+        "--nnode",
         required=False,
         default=1,
         type=int,
@@ -24,19 +24,21 @@ def get_arguments():
     return parser.parse_args()
 
 
-def split_list(indices, nnodes):
+def split_list(indices, nnode):
     #link: https://stackoverflow.com/questions/2130016/splitting-a-list-into-n-parts-of-approximately-equal-length
-    k, m = divmod(len(indices), nnodes)
-    return (indices[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(nnodes))
+    k, m = divmod(len(indices), nnode)
+    return (indices[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(nnode))
 
 
 def main():
     args = get_arguments()
-    nnodes = args.nnodes
-    reactions_pd = pd.read_csv(args.reaction_csv)
+    nnode = args.nnode
+    reactions_pd = pd.read_csv(args.reaction_csv,
+                               keep_default_na=False, na_values=np.nan
+                               ).dropna()
     indices = reactions_pd.index.to_list()
-    splitted_indices = list(split_list(indices, nnodes))
-    for node in range(nnodes):
+    splitted_indices = list(split_list(indices, nnode))
+    for node in range(nnode):
         out_json = "Node_" + str(node+1) + ".json"
         indices = splitted_indices[node]
         with open(out_json, 'w') as oj:

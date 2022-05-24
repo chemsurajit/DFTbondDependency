@@ -203,11 +203,17 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     return
 
 
-def get_big_chunk_rid_pd(total_reaction_ids_pd, indices_file):
-    with open(total_reaction_ids_pd, 'r') as fp:
-        indices = json.load(fp)
-        print(indices)
-        return indices
+def get_big_chunk_rid_pd(reaction_csv_file, indices_file):
+    with open(indices_file) as fp:
+        json_dict = json.load(fp)
+    index_list = json_dict["indices"]
+    del json_dict
+    df = pd.read_csv(reaction_csv_file,
+                     keep_default_na=False, na_values=np.nan
+                     ).dropna()
+    selected_df = df.iloc[index_list]
+    del df
+    return selected_df
 
 
 if __name__ == "__main__":
@@ -222,15 +228,22 @@ if __name__ == "__main__":
     outdir = os.path.abspath(args.out_dir)
     nprocs = args.nprocs
     logging.info("Number of processors chose: %s" % nprocs)
+    # load the indices of the reaction as total data frame
+    logging.info("loading %s ..." % args.rid_csv)
+    bigchunk_rid_pd = get_big_chunk_rid_pd(args.rid_csv, args.indices)
+    # load the molecular bond and DFT energy data
+    logging.info("loading %s ..." % args.mol_data)
     molecule_data_pd = get_required_mol_data(args.mol_data)
+    # load the g4mp2 molecular data
+    logging.info("loading %s ..." % args.g4mp2_en)
     g4mp2_en = get_required_g4mp2_data(args.g4mp2_en)
-    total_reaction_ids_pd = pd.read_csv(args.rid_csv,
-                                        usecols=["reactindex","pdtindex"],
-                                        keep_default_na=False, na_values=np.nan
-                                        ).dropna()
-    get_bigchunk_rid_pd = get_big_chunk_rid_pd(total_reaction_ids_pd, args.indices_file)
-    sys.exit()
-    splitted_rid_pd = np.array_split(total_reaction_ids_pd, nprocs)
+    #total_reaction_ids_pd = pd.read_csv(args.rid_csv,
+    #                                    usecols=["reactindex","pdtindex"],
+    #                                    keep_default_na=False, na_values=np.nan
+    #                                    ).dropna()
+    splitted_rid_pd = np.array_split(bigchunk_rid_pd, nprocs)
+    # free the memory where the larger reaction.csv data is loaded.
+    del bigchunk_rid_pd
     # setup related to multiprocessing
     main_func_results = []
     start = time.time()
