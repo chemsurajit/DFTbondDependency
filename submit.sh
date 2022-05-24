@@ -35,6 +35,7 @@ if [[ $# -gt 2 ]]; then
 	output_dir=$5
 	nprocs=$6
 	indices=$7
+    verbose=$8
 fi # To understand this, refer to the automated running bash script.
 
 echo "submit script, parallel python reaction: $pyscript"
