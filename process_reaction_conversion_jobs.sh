@@ -13,6 +13,7 @@ g4mp2_csv="./csvs/qm9_g4mp2_Nq.csv" #default name of the g4mp2 csv file
 pyscript_path="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 outdir="./outputs"
 submit_script="$pyscript_path/submit.sh"
+verbose="info"
 
 help () {
   echo "Usage: $0
@@ -38,6 +39,8 @@ help () {
             Default: ${g4mp2_csv}
     -pyscript_path/--pyscript_path: The PATH where the python scripts are kept.
             Default: ${pyscript_path}
+    -verbose/--verbose: The verbosity of parallel python script.
+            Default: ${verbose}
     -h/--help: To print this help
   "
 }
@@ -50,6 +53,7 @@ while [[ "$#" -gt 0 ]]; do
     -rean_csv|--rean_csv) rean_csv="$2"; shift ;;
     -g4mp2_csv|--g4mp2_csv) g4mp2_csv="$2"; shift ;;
     -pyscript_path|--pyscript_path) pyscript_path="$2"; shift ;;
+    -verbose|--verbose) verbose="$2"; shift ;;
     -h|--help) help; exit 0 ;;
     *) echo "Unknown parameter: $1"; help; exit 1 ;;
   esac
@@ -67,6 +71,7 @@ echo "mol_csv: $mol_csv"
 echo "rean_csv: $rean_csv"
 echo "g4mp2_csv: $g4mp2_csv"
 echo "python script path: $pyscript_path"
+echo "parallel python verbose: $verbose"
 
 # Step 1. Creation of the Nodes_<n>.json files.
 run_json="y"
@@ -118,6 +123,7 @@ if [ "${run_calc^^}" == "Y" ]; then
     sbatch -J ${json%.json} $submit_script \
               $pyscript_path/make_reactions_parallel.py \
               $rean_csv $mol_csv \
-              $g4mp2_csv $outdir $nprocs $json
+              $g4mp2_csv $outdir $nprocs \
+              $json $verbose
   done
 fi
