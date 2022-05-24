@@ -117,11 +117,11 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
     for chunk in np.array_split(rids_pd, 10000):
         react_indices = chunk["reactindex"].to_list()
         pdt_indices = chunk["pdtindex"].to_list()
-        logging.info("length of reactant and product indices %d %d" % (len(react_indices), len(pdt_indices)))
+        logging.info("length of reactant and product indices %d %d. pid: %d" % (len(react_indices), len(pdt_indices), pid))
         react_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(react_indices)]
         pdt_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(pdt_indices)]
-        logging.info("No of react g4mp2 energy rows: %d" % react_g4mp2_ens.shape[0])
-        logging.info("No of pdt g4mp2 energy rows: %d" % pdt_g4mp2_ens.shape[0])
+        logging.info("No of react g4mp2 energy rows: %d. pid: %d" % (react_g4mp2_ens.shape[0], pid))
+        logging.info("No of pdt g4mp2 energy rows: %d. pid: %d" % (pdt_g4mp2_ens.shape[0], pid))
         mol_react_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(react_indices)]
         mol_pdt_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(pdt_indices)]
         logging.info("Now dataframe wise subtraction will be performed pid: %d" % pid)
@@ -130,16 +130,23 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
         reaction_result_pd["G4MP2"] = pdt_g4mp2_ens["G4MP2"] - react_g4mp2_ens["G4MP2"]
         logging.debug("Done updating G4MP2 energy. pid: %d" % pid)
         reaction_result_pd["chemformula"] = mol_react_data["chemformula"]
+        logging.debug("Updated chemformula to reaction data. pid: %d" % pid)
         reaction_result_pd["react_smi"] = mol_react_data["smiles"]
+        logging.debug("Updated react_smi to reaction data. pid: %d" % pid)
         reaction_result_pd["pdt_smi"] = mol_pdt_data["smiles"]
+        logging.debug("Updated pdt_smi to reaction data. pid: %d" % pid)
         reaction_result_pd["reactindex"] = react_indices
+        logging.debug("Updated reactindex to reaction data. pid: %d" % pid)
         reaction_result_pd["pdtindex"] = pdt_indices
+        logging.debug("Updated pdtindex to reaction data. pid: %d" % pid)
         if nchunks == 0:
+            logging.info("New csv file will be created file name: %s, pid: %d" % (output_csv_file, pid))
             reaction_result_pd.to_csv(output_csv_file,
                                       mode="w", index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       sep=",")
         else:
+            logging.info("Will update the datachunk to csv file: %s" % output_csv_file)
             reaction_result_pd.to_csv(output_csv_file,
                                       mode='a', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
