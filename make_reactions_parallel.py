@@ -1,3 +1,4 @@
+import json
 import os
 import argparse
 import sys
@@ -91,6 +92,12 @@ def get_arguments():
         choices=["debug", "info", "warning", "error", "critical"],
         help="Provide logging level. Default is warning."
     )
+    parser.add_argument(
+        '-i', '--indices',
+        type=str,
+        required=True,
+        help="This file should contains the indices of the datafile to be read. Format should be in json."
+    )
     return parser.parse_args()
 
 
@@ -101,7 +108,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     :return: Integer 0 upon completion.
     """
     logging.debug("Inside process_reaction_data function")
-    bonds_ens_cols = bonds_list + ["PBE","B3LYP-D","M06-2X"]
+    bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(outid) + ".csv")
     pid = os.getpid()
     ppid = os.getppid()
@@ -112,6 +119,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     logging.info("pid, ppid info: %s %s" % (pid, ppid))
     #do stuff here.
     counter = 0
+    chunk_tocsv = []
     for rowid, row in rids_pd.iterrows():
         logging.debug("loopstart pid, rowid, row: %d, %d, %s" % (pid, rowid, row.to_string()))
         reactant_index = row.reactindex
@@ -159,6 +167,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
         logging.debug("pid, reaction_prop_diff5: %d, %s" % (pid, reaction_prop_diff.to_string()))
         logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
+        chunk_tocsv.append(reaction_prop_diff)
         if counter == 0:
             logging.info("New csv file will be created file name: %s, pid: %d" % (output_csv_file, pid))
             logging.debug("csv, pid, rowid in if: %s, %d, %d" %(output_csv_file, pid, rowid))
@@ -167,20 +176,38 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
                                       mode='w', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       sep=",")
-        else:
-            logging.debug("Else, append to csv pid, rowid: %s, %d, %d" % (output_csv_file, pid, rowid))
-            reaction_prop_diff.to_csv(output_csv_file,
+        #else:
+        #    logging.debug("Else, append to csv pid, rowid: %s, %d, %d" % (output_csv_file, pid, rowid))
+        #    reaction_prop_diff.to_csv(output_csv_file,
+        #                              mode='a', index=False,
+        #                              quoting=csv.QUOTE_MINIMAL,
+        #                              header=False, sep=",")
+        #    logging.debug("file %s updated" % output_csv_file)
+        if (counter+1) % 100000 == 0:
+            logging.info("Converted: %d reactions to %s with pid %d" % (counter, output_csv_file, pid))
+            logging.info("Will update the datachunk to csv file: %s" % output_csv_file)
+            pd.concat(chunk_tocsv).to_csv(output_csv_file,
                                       mode='a', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       header=False, sep=",")
-            logging.debug("file %s updated" % output_csv_file)
-        if (counter+1) % 100000 == 0:
-            logging.info("Converted: %d reactions to %s with pid %d" % (counter, output_csv_file, pid))
+            chunk_tocsv = []
         counter += 1
+    # Now write the remaining data at the end to the csv file
+    pd.concat(chunk_tocsv).to_csv(output_csv_file,
+                                  mode='a', index=False,
+                                  quoting=csv.QUOTE_MINIMAL,
+                                  header=False, sep=",")
     stop = time.time()
     completed_in = round((stop-start)/3600.0, 2)
     logging.info("Loop with pid %d completed in: %s hr" % (pid, completed_in))
     return
+
+
+def get_big_chunk_rid_pd(total_reaction_ids_pd, indices_file):
+    with open(total_reaction_ids_pd, 'r') as fp:
+        indices = json.load(fp)
+        print(indices)
+        return indices
 
 
 if __name__ == "__main__":
@@ -201,6 +228,8 @@ if __name__ == "__main__":
                                         usecols=["reactindex","pdtindex"],
                                         keep_default_na=False, na_values=np.nan
                                         ).dropna()
+    get_bigchunk_rid_pd = get_big_chunk_rid_pd(total_reaction_ids_pd, args.indices_file)
+    sys.exit()
     splitted_rid_pd = np.array_split(total_reaction_ids_pd, nprocs)
     # setup related to multiprocessing
     main_func_results = []
