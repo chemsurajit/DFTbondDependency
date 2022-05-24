@@ -46,6 +46,6 @@ python3 $pyscript --rid_csv $reactions_csv \
     --mol_data $mol_csv \
     --g4mp2_en $g4mp2_csv \
     --out_dir $output_dir --log $verbose \
-    --nprocs $nprocs --indices $indices > reactions_make.log 2>&1
+    --nprocs $nprocs --indices $indices > log_${indices%.json}.log 2>&1
 
 echo "finished"
