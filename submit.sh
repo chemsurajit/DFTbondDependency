@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --mail-type=END,FAIL
-#SBATCH --output=out.log
-#SBATCH --error=out.err
+#SBATCH --output=log_%x.log
 #SBATCH --signal=B:USR1@240
 #SBATCH --job-name=test
 #SBATCH --time=2-2:00:00
@@ -46,6 +45,6 @@ python3 $pyscript --rid_csv $reactions_csv \
     --mol_data $mol_csv \
     --g4mp2_en $g4mp2_csv \
     --out_dir $output_dir --log $verbose \
-    --nprocs $nprocs --indices $indices > log_${indices%.json}.log 2>&1
+    --nprocs $nprocs --indices $indices
 
 echo "finished"
