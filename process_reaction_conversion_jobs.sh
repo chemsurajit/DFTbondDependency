@@ -12,7 +12,7 @@ g4mp2_csv="./csvs/qm9_g4mp2_Nq.csv" #default name of the g4mp2 csv file
 # The pyscript_path is set to the directory where this script is kept by default:
 pyscript_path="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 outdir="./outputs"
-submit_script="submit.sh"
+submit_script="$pyscript_path/submit.sh"
 
 help () {
   echo "Usage: $0
