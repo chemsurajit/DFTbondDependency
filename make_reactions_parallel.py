@@ -113,8 +113,9 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
     start = time.time()
     logging.info("pid, ppid info: %s %s" % (pid, ppid))
     nchunks = 0
+    chunksize = rids_pd.shape[0] // 10000
     logging.debug("Start processing data for pid: %d in for loop" % pid)
-    for chunk in np.array_split(rids_pd, 10000):
+    for chunk in np.array_split(rids_pd, chunksize):
         react_indices = chunk["reactindex"].to_list()
         pdt_indices = chunk["pdtindex"].to_list()
         logging.info("length of reactant and product indices %d %d. pid: %d" % (len(react_indices), len(pdt_indices), pid))
