@@ -119,12 +119,12 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
         react_indices = chunk["reactindex"].to_list()
         pdt_indices = chunk["pdtindex"].to_list()
         logging.info("length of reactant and product indices %d %d. pid: %d" % (len(react_indices), len(pdt_indices), pid))
-        react_g4mp2_ens = g4mp2_en.loc[react_indices, "index"]
-        pdt_g4mp2_ens = g4mp2_en.loc[pdt_indices, "index"]
+        react_g4mp2_ens = g4mp2_en.loc[react_indices, "G4MP2"]
+        pdt_g4mp2_ens = g4mp2_en.loc[pdt_indices, "G4MP2"]
         logging.info("No of react g4mp2 energy rows: %d. pid: %d" % (react_g4mp2_ens.shape[0], pid))
         logging.info("No of pdt g4mp2 energy rows: %d. pid: %d" % (pdt_g4mp2_ens.shape[0], pid))
-        mol_react_data = molecule_data_pd.loc[react_indices, "index"]
-        mol_pdt_data = molecule_data_pd.loc[pdt_indices, "index"]
+        mol_react_data = molecule_data_pd.loc[react_indices, bonds_ens_cols]
+        mol_pdt_data = molecule_data_pd.loc[pdt_indices, bonds_ens_cols]
         logging.debug("number of rows in reactant df: %d. pid: %d" % (mol_react_data.shape[0], pid))
         logging.debug("number of rows in pdt df: %d. pid: %d" % (mol_pdt_data.shape[0], pid))
         logging.info("Now dataframe wise subtraction will be performed pid: %d" % pid)
