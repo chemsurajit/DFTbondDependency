@@ -103,7 +103,7 @@ fi
 # Decide whether to remove the csv files (if exists) or to run the script
 # a. check if one file exists in the outputs file.
 run_calc="y"
-if ls $outdir/Node_*.core_*.csv 1> /dev/null 2>&1; then
+if ls $outdir/Node_*_core_*.csv 1> /dev/null 2>&1; then
   echo "Csv file with reaction data exists inside $outdir "
   echo "If you chose Y/y, all the files will be deleted and new calculations will be performed."
   read -p "Want to run new calculations? (Y/N): " run_calc && [[ $run_calc == [yY] ]] || exit 1

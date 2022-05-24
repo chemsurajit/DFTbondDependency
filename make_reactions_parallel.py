@@ -101,7 +101,7 @@ def get_arguments():
     return parser.parse_args()
 
 
-def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
+def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, outdir):
     """
     The main function where all the reactions will be computed.
     :param rids_pd, outid, molecules_pd, g4mp2_pd, outdir
@@ -109,7 +109,7 @@ def process_reaction_data(rids_pd, outid, molecule_data_pd, g4mp2_en, outdir):
     """
     logging.debug("Inside process_reaction_data function")
     bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X"]
-    output_csv_file = os.path.join(outdir, "Reactions_" + str(outid) + ".csv")
+    output_csv_file = os.path.join(outdir, "Reactions_" + str(nodeno) + "_core_" + str(coreno) + ".csv")
     pid = os.getpid()
     ppid = os.getppid()
     logging.info("start index: %d, pid: %d" % (list(rids_pd.index.values)[0], pid))
@@ -227,6 +227,7 @@ if __name__ == "__main__":
     )
     outdir = os.path.abspath(args.out_dir)
     nprocs = args.nprocs
+    node_no = args.indices.split(".")[0]
     logging.info("Number of processors chose: %s" % nprocs)
     # load the indices of the reaction as total data frame
     logging.info("loading %s ..." % args.rid_csv)
@@ -249,7 +250,7 @@ if __name__ == "__main__":
     start = time.time()
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
-        results = [executor.submit(process_reaction_data, rid_pd, npd, molecule_data_pd, g4mp2_en, outdir) for npd, rid_pd in enumerate(splitted_rid_pd)]
+        results = [executor.submit(process_reaction_data, rid_pd, coreno, node_no, molecule_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
         for result in confut.as_completed(results):
             try:
                 main_func_results.append(result.result())
