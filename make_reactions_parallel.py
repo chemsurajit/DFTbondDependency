@@ -120,8 +120,8 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
         logging.info("length of reactant and product indices %d %d" % (len(react_indices), len(pdt_indices)))
         react_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(react_indices)]
         pdt_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(pdt_indices)]
-        logging.info("No of react g4mp2 energy rows: %d" % react_g4mp2_ens.spape[0])
-        logging.info("No of pdt g4mp2 energy rows: %d" % pdt_g4mp2_ens.spape[0])
+        logging.info("No of react g4mp2 energy rows: %d" % react_g4mp2_ens.shape[0])
+        logging.info("No of pdt g4mp2 energy rows: %d" % pdt_g4mp2_ens.shape[0])
         mol_react_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(react_indices)]
         mol_pdt_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(pdt_indices)]
         logging.info("Now dataframe wise subtraction will be performed pid: %d" % pid)
