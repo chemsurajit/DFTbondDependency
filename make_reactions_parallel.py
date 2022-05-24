@@ -101,6 +101,51 @@ def get_arguments():
     return parser.parse_args()
 
 
+def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, outdir):
+    logging.debug("Inside process_reaction_data function")
+    bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X"]
+    output_csv_file = os.path.join(outdir, "Reactions_" + str(nodeno) + "_core_" + str(coreno) + ".csv")
+    pid = os.getpid()
+    ppid = os.getppid()
+    logging.info("start index: %d, pid: %d" % (list(rids_pd.index.values)[0], pid))
+    logging.info("  End index: %d, pid: %d" % (list(rids_pd.index.values)[-1], pid))
+    logging.info("pid: %d, nreaction to be processed: %d" % (pid, rids_pd.shape[0]))
+    start = time.time()
+    logging.info("pid, ppid info: %s %s" % (pid, ppid))
+    nchunks = 0
+    for chunk in np.array_split(rids_pd, 10000):
+        react_indices = chunk["reactindex"].to_list()
+        pdt_indices = chunk["pdtindex"].to_list()
+        react_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(react_indices)]
+        pdt_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(pdt_indices)]
+        mol_react_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(react_indices)]
+        mol_pdt_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(pdt_indices)]
+        reaction_result_pd = mol_pdt_data[bonds_ens_cols].subtract(mol_react_data[bonds_ens_cols])
+        reaction_result_pd["G4MP2"] = pdt_g4mp2_ens["G4MP2"] - react_g4mp2_ens["G4MP2"]
+        reaction_result_pd["chemformula"] = mol_react_data["chemformula"]
+        reaction_result_pd["react_smi"] = mol_react_data["smiles"]
+        reaction_result_pd["pdt_smi"] = mol_pdt_data["smiles"]
+        reaction_result_pd["reactindex"] = react_indices
+        reaction_result_pd["pdtindex"] = pdt_indices
+        if nchunks == 0:
+            reaction_result_pd.to_csv(output_csv_file,
+                                      mode="w", index=False,
+                                      quoting=csv.QUOTE_MINIMAL,
+                                      sep=",")
+        else:
+            reaction_result_pd.to_csv(output_csv_file,
+                                      mode='a', index=False,
+                                      quoting=csv.QUOTE_MINIMAL,
+                                      header=False, sep=",")
+        nchunks += 1
+        if nchunks%10 == 0:
+            logging.info("Converted: %d reactions to %s with pid %d" % (nchunks, output_csv_file, pid))
+    stop = time.time()
+    completed_in = round((stop-start)/3600.0, 2)
+    logging.info("Loop with pid %d completed in: %s hr" % (pid, completed_in))
+    return
+
+
 def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, outdir):
     """
     The main function where all the reactions will be computed.
@@ -167,7 +212,6 @@ def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, o
         reaction_prop_diff["reactindex"], reaction_prop_diff["pdtindex"] = [reactant_index, pdt_index]
         logging.debug("pid, reaction_prop_diff5: %d, %s" % (pid, reaction_prop_diff.to_string()))
         logging.debug("loopend pid, rowid: %d, %d" % (pid, rowid))
-        chunk_tocsv.append(reaction_prop_diff)
         if counter == 0:
             logging.info("New csv file will be created file name: %s, pid: %d" % (output_csv_file, pid))
             logging.debug("csv, pid, rowid in if: %s, %d, %d" %(output_csv_file, pid, rowid))
@@ -176,6 +220,10 @@ def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, o
                                       mode='w', index=False,
                                       quoting=csv.QUOTE_MINIMAL,
                                       sep=",")
+            counter += 1
+            continue
+        # the dataframe will only be appended from here to skip the first row.
+        chunk_tocsv.append(reaction_prop_diff)
         #else:
         #    logging.debug("Else, append to csv pid, rowid: %s, %d, %d" % (output_csv_file, pid, rowid))
         #    reaction_prop_diff.to_csv(output_csv_file,
@@ -250,7 +298,7 @@ if __name__ == "__main__":
     start = time.time()
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
-        results = [executor.submit(process_reaction_data, rid_pd, coreno, node_no, molecule_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
+        results = [executor.submit(proces_reaction_data_column, rid_pd, coreno, node_no, molecule_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
         for result in confut.as_completed(results):
             try:
                 main_func_results.append(result.result())
