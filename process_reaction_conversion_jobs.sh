@@ -12,6 +12,7 @@ g4mp2_csv="./csvs/qm9_g4mp2_Nq.csv" #default name of the g4mp2 csv file
 # The pyscript_path is set to the directory where this script is kept by default:
 pyscript_path="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 outdir="./outputs"
+submit_script="submit.sh"
 
 help () {
   echo "Usage: $0
@@ -75,7 +76,7 @@ if ls Node_*.json 1> /dev/null 2>&1; then
   if [[ "$run_json" == [yY] ]]; then
     echo "Json file will be created."
     rm Node_*.json
-    #python3 "$pyscript_path"/split_reactionscsv.py --reaction_csv "$rean_csv" --nnode "$nnode"
+    python3 "$pyscript_path"/split_reactionscsv.py --reaction_csv "$rean_csv" --nnode "$nnode"
   else
     echo "json files will be read."
     njson=$(ls *.json| wc -l)
@@ -88,7 +89,7 @@ if ls Node_*.json 1> /dev/null 2>&1; then
   fi
 else
   echo "Running split file."
-  #python3 "$pyscript_path"/split_reactionscsv.py --reaction_csv "$rean_csv" --nnode "$nnode"
+  python3 "$pyscript_path"/split_reactionscsv.py --reaction_csv "$rean_csv" --nnode "$nnode"
 fi
 
 
@@ -114,6 +115,9 @@ if [ "${run_calc^^}" == "Y" ]; then
   for json in *.json; do
     echo "submitting jobs with indices from: $json"
     echo ${json%.json}
-    sbatch -J ${json%.json} $submit_script $rean_csv $mol_csv $g4mp2_csv $outdir $nprocs $nnode
+    sbatch -J ${json%.json} $submit_script \
+              $pyscript_path/make_reactions_parallel.py \
+              $rean_csv $mol_csv \
+              $g4mp2_csv $outdir $nprocs $json
   done
 fi
