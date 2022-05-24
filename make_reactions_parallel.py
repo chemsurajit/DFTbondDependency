@@ -128,6 +128,7 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
         reaction_result_pd = mol_pdt_data[bonds_ens_cols].subtract(mol_react_data[bonds_ens_cols])
         logging.debug("done subtracting dataframe. pid: %d" % pid)
         reaction_result_pd["G4MP2"] = pdt_g4mp2_ens["G4MP2"] - react_g4mp2_ens["G4MP2"]
+        logging.debug("Done updating G4MP2 energy. pid: %d" % pid)
         reaction_result_pd["chemformula"] = mol_react_data["chemformula"]
         reaction_result_pd["react_smi"] = mol_react_data["smiles"]
         reaction_result_pd["pdt_smi"] = mol_pdt_data["smiles"]
