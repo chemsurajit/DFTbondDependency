@@ -113,14 +113,18 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
     start = time.time()
     logging.info("pid, ppid info: %s %s" % (pid, ppid))
     nchunks = 0
+    logging.debug("Start processing data for pid: %d in for loop" % pid)
     for chunk in np.array_split(rids_pd, 10000):
         react_indices = chunk["reactindex"].to_list()
         pdt_indices = chunk["pdtindex"].to_list()
+        logging.info("length of reactant and product indices %d %d" % (len(react_indices), len(pdt_indices)))
         react_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(react_indices)]
         pdt_g4mp2_ens = g4mp2_en.loc[g4mp2_en["index"].isin(pdt_indices)]
         mol_react_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(react_indices)]
         mol_pdt_data = molecule_data_pd.loc[molecule_data_pd["index"].isin(pdt_indices)]
+        logging.info("Now dataframe wise subtraction will be performed pid: %d" % pid)
         reaction_result_pd = mol_pdt_data[bonds_ens_cols].subtract(mol_react_data[bonds_ens_cols])
+        logging.debug("done subtracting dataframe. pid: %d" % pid)
         reaction_result_pd["G4MP2"] = pdt_g4mp2_ens["G4MP2"] - react_g4mp2_ens["G4MP2"]
         reaction_result_pd["chemformula"] = mol_react_data["chemformula"]
         reaction_result_pd["react_smi"] = mol_react_data["smiles"]
