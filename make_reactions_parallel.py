@@ -101,7 +101,7 @@ def get_arguments():
     return parser.parse_args()
 
 
-def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, outdir):
+def process_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, outdir):
     logging.debug("Inside process_reaction_data function")
     bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(nodeno) + "_core_" + str(coreno) + ".csv")
@@ -121,6 +121,7 @@ def proces_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2
         logging.info("length of reactant and product indices %d %d. pid: %d" % (len(react_indices), len(pdt_indices), pid))
         react_g4mp2_ens = g4mp2_en.loc[react_indices, "G4MP2"]
         pdt_g4mp2_ens = g4mp2_en.loc[pdt_indices, "G4MP2"]
+        print(react_g4mp2_ens.head())
         logging.info("No of react g4mp2 energy rows: %d. pid: %d" % (react_g4mp2_ens.shape[0], pid))
         logging.info("No of pdt g4mp2 energy rows: %d. pid: %d" % (pdt_g4mp2_ens.shape[0], pid))
         mol_react_data = molecule_data_pd.loc[react_indices, bonds_ens_cols]
@@ -320,7 +321,7 @@ if __name__ == "__main__":
     start = time.time()
     logging.info("Starting parallel run.")
     with confut.ProcessPoolExecutor(max_workers=nprocs) as executor:
-        results = [executor.submit(proces_reaction_data_column, rid_pd, coreno, node_no, modified_mol_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
+        results = [executor.submit(process_reaction_data, rid_pd, coreno, node_no, modified_mol_data_pd, g4mp2_en, outdir) for coreno, rid_pd in enumerate(splitted_rid_pd)]
         for result in confut.as_completed(results):
             try:
                 main_func_results.append(result.result())
