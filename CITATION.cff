@@ -1,0 +1,11 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Nandi"
+  given-names: "Surajit"
+  orcid: "https://orcid.org/0000-0002-7105-2209"
+title: "DFTbondDependency"
+version: 1.0.0
+doi: 10.****
+date-released: 2022-06-07
+url: "https://github.com/chemsurajit/DFTbondDependency"
