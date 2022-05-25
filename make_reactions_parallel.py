@@ -259,6 +259,7 @@ def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, o
             chunk_tocsv = []
         counter += 1
     # Now write the remaining data at the end to the csv file
+    logging.info("Will update the reminder of the datachunk outside for loop to %s. pid: %d" % (output_csv_file, pid))
     pd.concat(chunk_tocsv).to_csv(output_csv_file,
                                   mode='a', index=False,
                                   quoting=csv.QUOTE_MINIMAL,
