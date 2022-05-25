@@ -249,7 +249,7 @@ def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, o
         #                              quoting=csv.QUOTE_MINIMAL,
         #                              header=False, sep=",")
         #    logging.debug("file %s updated" % output_csv_file)
-        if (counter+1) % 100000 == 0:
+        if (counter+1) % 50000 == 0:
             logging.info("Converted: %d reactions to %s with pid %d" % (counter, output_csv_file, pid))
             logging.info("Will update the datachunk to csv file: %s" % output_csv_file)
             pd.concat(chunk_tocsv).to_csv(output_csv_file,
