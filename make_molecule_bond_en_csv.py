@@ -299,7 +299,9 @@ def update_pd_df(inpdf,
                  energies=None):
     """Function to update to dataframe
     """
-    row_dict = {"index":index, "smiles":smiles, "chemformula":chemformula, "G4MP2":g4mp2_energy}
+    row_dict = {"index":index,
+                "smiles":smiles,
+                "chemformula":chemformula}
     row_dict.update(energies)
     row_dict.update(bonds)
     df = pd.DataFrame(row_dict, index=[0])
@@ -376,7 +378,7 @@ def main():
         bonds_list = mol_to_bonds_list(mols[0], ixyzfile)
         smiles = Chem.MolToSmiles(mols[0], isomericSmiles=True)
         chemformula = CalcMolFormula(mols[0])
-        g4mp2_energy = g4mp2_pd.loc[g4mp2_pd['index'] == int(logindex), 'G4MP2'].tolist()[0]
+        #g4mp2_energy = g4mp2_pd.loc[g4mp2_pd['index'] == int(logindex), 'G4MP2'].tolist()[0]
         #
         # Write everything to csv file
         #
