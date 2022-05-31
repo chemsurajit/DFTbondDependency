@@ -1,3 +1,4 @@
+import logging
 import sys, os, glob
 import pandas as pd
 import numpy as np
@@ -13,12 +14,12 @@ bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
               'N_N_A', 'N_s_H']
 
 
-def compute_statmodel_lr(csv_files, dft_functional, output):
+def compute_statmodel_linear_regression(csv_files, dft_functional, output):
     val_x = []
     val_y = []
     for csvf in csv_files:
         nchunk = 0
-        print("Reading csv file: ", csvf)
+        logging.info("Reading csv file: %s" % csvf)
         for chunk in pd.read_csv(csvf, chunksize=100000):
             nchunk += 1
             df = chunk.dropna(axis=0, how='any')
@@ -30,8 +31,8 @@ def compute_statmodel_lr(csv_files, dft_functional, output):
                 val_x.extend(_val_x)
                 val_y.extend(df["dE"].tolist())
             if nchunk%10 == 0:
-                print("Nchunk: ", nchunk)
-        print("Done reading file: ", csvf)
+                logging.info("Nchunk: %d" % nchunk)
+        logging.info("Done reading file: %s" % csvf)
     if (len(val_x) > 0) and (len(val_y) > 0):
         val_x = np.array(val_x)
         val_y = np.array(val_y)
@@ -47,31 +48,32 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
     val_y = []
     for csvf in csv_files:
         nchunk = 0
-        print("Reading csv file: ", csvf)
+        logging.info("Reading csv file: %s" % csvf)
         for chunk in pd.read_csv(csvf, chunksize=100000):
             nchunk += 1
             df = chunk.dropna(axis=0, how='any')
             # remove all the reactions where there is no bond changes:
             df = df.loc[(df[bonds_list].abs().sum(axis=1) != 0)]
+            # This is the error between G4MP2 rean energies and the DFT rean energies.
             df["dE"] = df.loc[:, ("G4MP2")] - df.loc[:, (dft_functional.upper())]
             _val_x = df[bonds_list].values.tolist()
             if len(_val_x) > 0:
                 val_x.extend(_val_x)
                 val_y.extend(df["dE"].tolist())
             if nchunk%10 == 0:
-                print("Nchunk: ", nchunk)
-        print("Done reading file: ", csvf)
+                logging.info("Nchunk: %d" % nchunk)
+        logging.info("Done reading file: %s" % csvf)
     if (len(val_x) > 0) and (len(val_y) > 0):
         val_x = np.array(val_x)
         val_y = np.array(val_y)
-        print("Max and min of x: ", np.amax(val_x), np.amin(val_x))
-        print("Max and min of y: ", np.amax(val_y), np.amin(val_y))
+        logging.debug("Max and min of x: %f, %f" % (np.amax(val_x), np.amin(val_x)))
+        logging.debug("Max and min of y: %f, %f" % (np.amax(val_y), np.amin(val_y)))
         reg = LinearRegression().fit(val_x, val_y)
-        print("Regression score: ", reg.score(val_x, val_y))
-        print("The intercept: ", reg.intercept_)
+        logging.info("Regression score: %f " % reg.score(val_x, val_y))
+        logging.info("The intercept: %f" % reg.intercept_)
         list_coef = reg.coef_.tolist()
-        print ("bonds \t coefficient")
-        print("\n".join("{}\t{}".format(x, y) for x, y in zip(bonds_list, list_coef)))
+        logging.info("bonds \t coefficient")
+        logging.info("\n".join("{}\t{}".format(x, y) for x, y in zip(bonds_list, list_coef)))
         #
         # Calculation of P values.
         # source: https://stackoverflow.com/questions/27928275/find-p-value-significance-in-scikit-learn-linearregression
@@ -81,55 +83,70 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         MSE = (sum((val_y-predictions)**2))/(len(newX)-len(newX[0]))
         var_b = MSE*(np.linalg.inv(np.dot(newX.T,newX)).diagonal())
         sd_b = np.sqrt(var_b)
-        ts_b = params/ sd_b
+        ts_b = params/sd_b
         p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
-        myDF3 = pd.DataFrame()
-        myDF3["bonds"], myDF3["Coefficients"],myDF3["Standard Errors"],myDF3["t values"],myDF3["Probabilities"] = [bonds_list, params,sd_b,ts_b,p_values]
+        lr_df = pd.DataFrame()
+        lr_df["bonds"], lr_df["coefficients"], lr_df["standard_errors"], lr_df["t_values"], lr_df["probabilities"] = [bonds_list, params, sd_b, ts_b, p_values]
         myDF3.to_csv(output, index=False)
     else:
-        print("Length of the x and y not greater than zero.")
-        print("Length x: ", len(val_x))
-        print("Length y: ", len(val_y))
+        logging.info("Length of the x and y not greater than zero.")
+        logging.info("Length bonds: %d" % len(val_x))
+        logging.info("Length errors: %d" % len(val_y))
     return
 
 
-def get_csv_files(csv_dir):
+def get_csv_files(csv_dir, match=None):
     """This function returns a list of csv files with matching pattern Reaction_*.csv."""
     files = []
     cwd = os.getcwd()
     os.chdir(csv_dir)
-    for ifile in glob.glob('Reactions_*.csv'):
+    if match is None:
+        match = "*.csv"
+    for ifile in glob.glob(match):
         files.append(os.path.abspath(ifile))
     os.chdir(cwd)
     return files
 
 
-def main():
+def get_arguments():
     parser = argparse.ArgumentParser("Script to perform linear regression for different DFT functionals.")
-    parser.add_argument('-d', '--data_dir', help="Path where the Reactions_n.csv files are kept. \
-                        default, current directory.", default="./")
+    parser.add_argument(
+        "-data_dir", "--data_dir",
+        type=str,
+        help="Path where the Reactions_n.csv files are kept. \
+                        default, current directory.",
+        required=False,
+        default="./"
+    )
 
-    parser.add_argument('-f', '--dft_functional', required=True, help="Name of the dft functional \
-                        from which to calculate errors in reaction energies. Required only if --limit is used.")
+    parser.add_argument(
+        "-dft_functional", "--dft_functional",
+        type=str,
+        help="Name of the dft functional \
+                        from which to calculate errors in reaction energies. Required only if --limit is used.",
+        required=True,
+    )
 
-    parser.add_argument('-o', '--output', help="Output csv file for the coefficients and other values.", default="output.csv")
-
-    args = parser.parse_args()
-    csv_dir = args.data_dir
-    csv_files = get_csv_files(csv_dir)
-    dft_functional = args.dft_functional
-
-    output = args.output
-    if not output.endswith(".csv"):
-        print("Only csv files allowed as output data file")
-        parser.print_help()
-        sys.exit()
-
-    #compute_sklearn_linear_regression(csv_files, dft_functional, output)
-    compute_statmodel_lr(csv_files, dft_functional, output)
-
-    return
+    parser.add_argument(
+        "-output", "--output",
+        type=str,
+        help="Output csv file for the coefficients and other values.",
+        required=False,
+        default="output.csv"
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    main()
+    args = get_arguments()
+    csv_dir = args.data_dir
+    match = "Reactions_*.csv"
+    csv_files = get_csv_files(csv_dir, match=match)
+    dft_functional = args.dft_functional
+    output = args.output
+    if not output.endswith(".csv"):
+        logging.info("Only csv files allowed as output data file")
+        sys.exit()
+
+    compute_sklearn_linear_regression(csv_files, dft_functional, output)
+    #compute_statmodel_linear_regression(csv_files, dft_functional, output)
