@@ -7,6 +7,7 @@ from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import pandas as pd
 import csv
+import logging
 
 
 def get_files(directory, match=""):
@@ -25,8 +26,8 @@ def get_files(directory, match=""):
             allfiles.append(os.path.abspath(os.path.join(directory, files)))
     # Check if the list xyz_files is empty. If it is empty, then program exits.
     if not allfiles:
-        print("No files with match %s found in directory: %s " % (match, directory))
-        print("Program exit now.")
+        logging.error("No files with match %s found in directory: %s " % (match, directory))
+        logging.error("Program exit now.")
         sys.exit()
     return sorted(allfiles)
 
@@ -47,8 +48,8 @@ def get_dft_energies(logfile):
                 en_ev = float(line.split("=")[1].split()[1])
                 dft_energies[func] = en_ev
     if not FR_cont:
-        print ("No data found for DFT functional")
-        print ("The reason could be that the ADF log file prints the energy with different format.")
+        logging.warning("No data found for DFT functional")
+        logging.warning("The reason could be that the ADF log file prints the energy with different format.")
     return dft_energies
 
 
@@ -91,8 +92,8 @@ def mol_to_bonds_list(molobj, filename):
                 elif str(btype) == "AROMATIC":
                     bonds_list['C_C_A'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), a1+"-"+a2)
-                    print("Exiting for.", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # C-H bonds
@@ -101,8 +102,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['C_s_H'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # C-O bonds
@@ -117,8 +118,8 @@ def mol_to_bonds_list(molobj, filename):
                 elif str(btype) == "AROMATIC":
                     bonds_list['C_O_A'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # C-N bonds
@@ -133,8 +134,8 @@ def mol_to_bonds_list(molobj, filename):
                 elif str(btype) == "AROMATIC":
                     bonds_list['C_N_A'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # C-F bonds
@@ -143,8 +144,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['C_s_F'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # O-O bonds
@@ -157,8 +158,8 @@ def mol_to_bonds_list(molobj, filename):
                 elif str(btype) == "AROMATIC":
                     bonds_list['O_O_A'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # O-H bond
@@ -167,8 +168,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['O_s_H'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # O-N bonds
@@ -183,8 +184,8 @@ def mol_to_bonds_list(molobj, filename):
                 elif str(btype) == "AROMATIC":
                     bonds_list['O_N_A'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # O-F bond
@@ -193,8 +194,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['O_s_F'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # N-N bonds
@@ -209,8 +210,8 @@ def mol_to_bonds_list(molobj, filename):
                 elif str(btype) == "AROMATIC":
                     bonds_list['N_N_A'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # N-H bond
@@ -219,8 +220,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['N_s_H'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # N-F bonds
@@ -229,8 +230,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['N_s_F'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
             #
             # F-H bond
@@ -239,8 +240,8 @@ def mol_to_bonds_list(molobj, filename):
                 if str(btype) == "SINGLE":
                     bonds_list['F_s_H'] += 1
                 else:
-                    print("Don't know bond type: ", str(btype), " ", a1+"-"+a2)
-                    print("Exiting for ", xyzfile)
+                    logging.error("Don't know bond type: %s for bond %s" % (str(btype), a1+"-"+a2))
+                    logging.error("Exiting for %s" % xyzfile)
                     raise ValueError
     return bonds_list
 
@@ -265,7 +266,7 @@ def get_properties_combined(index, smiles, chem_formula, bonds_list):
 def get_smiles_from_xyz(ixyzfile):
     """Function that takes xyzfile path and return the smiles"""
     atoms, charge, xyz_coordinates = xyz2mol.read_xyz_file(ixyzfile)
-    return_code = True
+    #return_code = True
     mols = None
     try:
         mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
@@ -273,22 +274,29 @@ def get_smiles_from_xyz(ixyzfile):
                                embed_chiral=True, use_huckel=False)
     except:
         mols = None
-        print("No mol object from the xyz file: ", ixyzfile)
+        logging.warning("No mol object from the xyz file: ", ixyzfile)
     return mols
 
 
 def update_failed_indices(outputfile, indices):
     if not indices:
-        print("Number of failed indices = ", len(indices))
-        print("No file will be created.")
+        logging.warning("Number of failed indices = ", len(indices))
+        logging.warning("No file will be created.")
     else:
+        logging.warning("Number of failed indices = ", len(indices))
+        logging.warning("The indices will be updated to: %s" % outputfile)
         with open(outputfile, 'w') as fp:
             for index in indices:
                 fp.write("%s\n" % str(index))
     return
 
 
-def update_pd_df(inpdf, index=None, smiles=None, chemformula=None, bonds=None, g4mp2_energy=None, energies=None):
+def update_pd_df(inpdf,
+                 index=None,
+                 smiles=None,
+                 chemformula=None,
+                 bonds=None,
+                 energies=None):
     """Function to update to dataframe
     """
     row_dict = {"index":index, "smiles":smiles, "chemformula":chemformula, "G4MP2":g4mp2_energy}
@@ -299,61 +307,70 @@ def update_pd_df(inpdf, index=None, smiles=None, chemformula=None, bonds=None, g
     return newdf
 
 
-def main():
-    #
-    # parsing arguments
-    #
+def get_arguments():
+    """Function to parse arguments."""
     parser = argparse.ArgumentParser("File to create bond list from xyz file.")
-    parser.add_argument('-xd', '--xyzd',
+    parser.add_argument("-xyz_dir", "--xyz_dir",
                         help="Location of the xyz directory. Default is current directory.",
+                        type=str,
                         required=True)
-    parser.add_argument('-ld', '--dir_logfiles',
+    parser.add_argument("-log_dir", "--log_dir",
                         help="Location of the directory from where the logfiles will be read.",
+                        type=str,
                         required=True)
-    parser.add_argument('-g', '--g4mp2_csvfile',
-                        help="Location of the csv file containing G4MP2 energies of the QM9 dataset.", required=True)
-    parser.add_argument('-o', '--output', help="Name of the output file. Should end with csv",
-                        required=False, default="qm9_bonds_energies.csv")
-    parser.add_argument('-f', '--failed_file', help="File in which to update the indices where processing failed",
-                        required=False, default='failed_indices.dat')
+    #parser.add_argument("-g4mp2_csvfile", "--g4mp2_csvfile",
+    #                    help="Location of the csv file containing G4MP2 energies of the QM9 dataset.",
+    #                    type=str,
+    #                    required=True)
+    parser.add_argument("-output", '--output',
+                        help="Name of the output file. Should end with csv",
+                        type=str,
+                        required=False,
+                        default="qm9_bonds_energies.csv")
+    parser.add_argument('-failed_file', '--failed_file',
+                        help="File in which to update the indices where processing failed",
+                        type=str,
+                        required=False,
+                        default='failed_indices.dat')
+    return parser.parse_args()
 
 
-    args = parser.parse_args()
-    xyz_direcoty = os.path.abspath(args.xyzd)
-    log_dir = args.dir_logfiles
-    qm9_g4pm2_csv = args.g4mp2_csvfile
+def main():
+    args = get_arguments()
+    xyz_direcotory = os.path.abspath(args.xyz_dir)
+    log_dir = args.log_dir
+    #qm9_g4pm2_csv = args.g4mp2_csvfile
     output_csv = args.output
     failed_output = args.failed_file
-    #
-    # End of parsing input arguments
-    #
+    #Since in the QM9_G4MP2 dataset, the filename convention starts
+    # with dsgdb9nsd_*.xyz, the match strings are chosen accordingly.
     failed_mols_indices = []
-    print("Directory containing xyz files: ", xyz_direcoty)
+    logging.info("Directory containing xyz files: ", xyz_direcotory)
     xyzfiles = get_files(xyz_direcoty, match='dsgdb9nsd_*.xyz')
     logfiles = get_files(log_dir, match='*_xyz.out')
-    print("Number of xyz files: ", len(xyzfiles))
+    logging.info("Number of xyz files: ", len(xyzfiles))
     df = pd.DataFrame()
-    g4mp2_pd = pd.read_csv(qm9_g4pm2_csv)
+    #g4mp2_pd = pd.read_csv(qm9_g4pm2_csv)
     for i in range(len(xyzfiles)):
         ixyzfile = xyzfiles[i]
         ilogfile = logfiles[i]
         logindex = os.path.basename(ilogfile).split("_")[0]
         xyzindex = os.path.basename(ixyzfile).split("_")[1].split(".")[0]
         if logindex != xyzindex:
-            print("The index in logfile and xyzfiles are not same.")
-            print("Xyzfile: ", ixyzfile)
-            print("logfile: ", ilogfile)
+            logging.error("The index in logfile and xyzfiles are not same.")
+            logging.error("Xyzfile: ", ixyzfile)
+            logging.error("logfile: ", ilogfile)
             break
-        print(logindex, ilogfile, ixyzfile)
+        logging.debug("logindex, ilogfile, ixyzfile: %s %s %s" % (logindex, ilogfile, ixyzfile))
         dft_energies = get_dft_energies(os.path.abspath(ilogfile))
         if not dft_energies:
-            print("No dft energies found for index: ", logindex)
+            logging.error("No dft energies found for index: ", logindex)
             failed_mols_indices.append(logindex)
             continue
             # Get the smile string using the xyz2mol module.
         mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
-            print("Failed to convert xyz to smiles string: ", ixyzfile)
+            logging.info("Failed to convert xyz to smiles string: ", ixyzfile)
             failed_mols_indices.append(xyzindex)
             continue
         bonds_list = mol_to_bonds_list(mols[0], ixyzfile)
@@ -363,9 +380,14 @@ def main():
         #
         # Write everything to csv file
         #
-        df = update_pd_df(df, index=logindex, smiles=smiles, chemformula=chemformula, bonds=bonds_list, g4mp2_energy=g4mp2_energy, energies=dft_energies)
+        df = update_pd_df(df,
+                          index=logindex,
+                          smiles=smiles,
+                          chemformula=chemformula,
+                          bonds=bonds_list,
+                          energies=dft_energies)
         if (i % 10000) == 0:
-            print("Number of molecules converted: ", i)
+            logging.info("Number of molecules converted: %d" % i)
     #write to csv file.
     df.to_csv(output_csv, sep=",", index=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
     update_failed_indices(failed_output, failed_mols_indices)
