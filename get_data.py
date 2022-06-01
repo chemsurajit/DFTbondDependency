@@ -57,20 +57,19 @@ def extract_zips(download_path, extract_path, zipfiles):
     """
 
     to_logs_dir = ["TZP", "DZP", "SZ"]
-    to_xyzfiles_dir = "xyzfiles.zip"
 
     logging.info("Extracting files...")
     assert os.path.exists(download_path)
 
     for zipf in zipfiles:
-        if zipf in zipfiles:
+        if zipf in to_logs_dir:
             output_file_path = os.path.join(extract_path, "logs")
         else:
-            output_file_path = os.path.join(extract_path)
+            output_file_path = extract_path
         #output_file_path = os.path.join(extract_path, zipf.split(".")[0])
         zip_file_path = os.path.join(download_path, zipf+".zip")
         if os.path.exists(zip_file_path):
-            logging.info("Extracting file to: %s" % output_file_path)
+            logging.info("Extracting file %s to: %s" % (zipf, output_file_path))
             extract_zip(zip_file_path, output_file_path)
         else:
             logging.warning("File %s not found" % zip_file_path)
