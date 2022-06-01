@@ -1,7 +1,11 @@
+import json
 import os
+import sys
 import requests
 import logging
 import zipfile
+import argparse
+
 
 def download_file(url, dest):
     """
@@ -14,7 +18,8 @@ def download_file(url, dest):
                 f.write(chunk)
     return
 
-def download_files(download_path, base_url, download_option):
+
+def download_files(download_path, links_dict, files):
     """
     Download zip files from figshare.
     """
@@ -27,28 +32,15 @@ def download_files(download_path, base_url, download_option):
         with open(os.path.join(download_path, ".gitignore"), "w") as f:
             f.write("*")
 
-    if download_option == "all":
-        files = {
-            "csvs.zip": 19947446,
-            "outputs.zip": 19942154,
-            "xyzfiles.zip": 19780570,
-            "TZP.zip": 19786672
-        }
-    if download_option == "partial":
-        files = {
-            "xyzfiles.zip": 19780570,
-            "TZP.zip": 19786672
-        }
-
-    for i, (file_name, file_id) in enumerate(files.items()):
-        file_url = base_url + str(file_id)
-        file_dest = os.path.join(dest, file_name)
+    for i, file_name in enumerate(files):
+        file_url = links_dict[file_name]
+        logging.info("file url: %s" % file_url)
+        file_dest = os.path.join(download_path, file_name+".zip")
         if not os.path.exists(file_dest):
             logging.info("Downloading files: %d/%d --> %s" % (i+1, len(files), file_url))
             download_file(file_url, file_dest)
         else:
             logging.info("File already exists: %d/%d --> %s" %(i+1, len(files), file_dest))
-
     return
 
 def extract_zip(src, dest):
@@ -59,30 +51,13 @@ def extract_zip(src, dest):
         zip.extractall(path=dest)
     return
 
-def extract_zips(download_path, extract_path, download_option):
+def extract_zips(download_path, extract_path, files):
     """
     Extract all the zip files.
     """
 
-    if download_option == "all":
-        files = ["csvs.zip",
-                 "outputs.zip",
-                 "xyzfiles.zip",
-                 "TZP.zip"
-        ]
-    if download_option == "partial":
-        files = [
-            "xyzfiles.zip",
-            "TZP.zip"
-        ]
-
     logging.info("Extracting files...")
-    src = download_path
-    assert os.path.exists(src)
-
-    if os.path.exists(extract_path):
-        logging.info("Directory already exists: %s" % extract_path)
-        return
+    assert os.path.exists(download_path)
 
     for zipf in files:
         output_file_path = os.path.join(extract_path, zipf.split(".")[0])
@@ -92,13 +67,55 @@ def extract_zips(download_path, extract_path, download_option):
             extract_zip(zip_file_path, output_file_path)
         else:
             logging.warning("File %s not found" % zip_file_path)
+    return
+
 
 def get_arguments():
+    """
+    Function to parse arguments.
+    """
+    parser = argparse.ArgumentParser("File to download data from the database.")
+    parser.add_argument(
+        "-all", "--all",
+        help="Option to download all data. If present, all data will be downloaded. \
+             if not present, only the xyzfiles and logfiles will be downloaded.",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-links", "--links",
+        help="json file containing all the links for the data.",
+        type=str,
+        required=True
+    )
+    parser.add_argument(
+        '-log', '--log',
+        type=str,
+        required=False,
+        default="warning",
+        choices=["debug", "info", "warning", "error", "critical"],
+        help="Provide logging level. Default is warning."
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    download_path = os.path.abspath("./downloads")
-    base_url = sys.argv[1]
+    download_path = os.path.abspath("./zips")
+    args = get_arguments()
+    # log settings
+    log_level = args.log.upper()
+    logging.basicConfig(
+        format="[%(asctime)s] %(levelname)s: %(message)s",
+        level=log_level,
+        datefmt="%H:%M:%S",
+    )
+    #
+    link_js = args.links
+    with open(link_js) as fp:
+        links_dict = json.load(fp)
+    if args.all:
+        files = ["csvs", "outputs", "xyzfiles", "TZP"]
+    else:
+        files = ["xyzfiles", "TZP"]
     extract_path = os.path.abspath("./")
-    download_files(download_path, base_url)
-    extract_zips(download_path, extract_path)
+    download_files(download_path, links_dict, files)
+    extract_zips(download_path, extract_path, files)

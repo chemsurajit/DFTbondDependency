@@ -310,7 +310,9 @@ def update_pd_df(inpdf,
 
 
 def get_arguments():
-    """Function to parse arguments."""
+    """
+    Function to parse arguments.
+    """
     parser = argparse.ArgumentParser("File to create bond list from xyz file.")
     parser.add_argument("-xyz_dir", "--xyz_dir",
                         help="Location of the xyz directory. Default is current directory.",
