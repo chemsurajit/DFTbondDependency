@@ -56,11 +56,18 @@ def extract_zips(download_path, extract_path, zipfiles):
     Extract all the zip files.
     """
 
+    to_logs_dir = ["TZP", "DZP", "SZ"]
+    to_xyzfiles_dir = "xyzfiles.zip"
+
     logging.info("Extracting files...")
     assert os.path.exists(download_path)
 
     for zipf in zipfiles:
-        output_file_path = os.path.join(extract_path, zipf.split(".")[0])
+        if zipf in zipfiles:
+            output_file_path = os.path.join(extract_path, "logs")
+        else:
+            output_file_path = os.path.join(extract_path)
+        #output_file_path = os.path.join(extract_path, zipf.split(".")[0])
         zip_file_path = os.path.join(download_path, zipf+".zip")
         if os.path.exists(zip_file_path):
             logging.info("Extracting file to: %s" % output_file_path)
@@ -99,6 +106,12 @@ def get_arguments():
 
 
 if __name__ == "__main__":
+    # all directory will be relative to the CWD by default.
+    # downloads to $CWD/zips
+    # log files extracted to $CWD/logs/TZP $CWD/logs/DZP...
+    # final reaction outputs containing ens, bond changes to $CWD/outputs/
+    # other already calculated csvs to $CWD/csvs
+    # xyzfiles to $CWD/xyzfiles
     download_path = os.path.abspath("./zips")
     args = get_arguments()
     # log settings
