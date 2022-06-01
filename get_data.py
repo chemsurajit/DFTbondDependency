@@ -19,7 +19,7 @@ def download_file(url, dest):
     return
 
 
-def download_files(download_path, links_dict, files):
+def download_files(download_path, links_dict, zipfiles):
     """
     Download zip files from figshare.
     """
@@ -32,15 +32,15 @@ def download_files(download_path, links_dict, files):
         with open(os.path.join(download_path, ".gitignore"), "w") as f:
             f.write("*")
 
-    for i, file_name in enumerate(files):
+    for i, file_name in enumerate(zipfiles):
         file_url = links_dict[file_name]
         logging.info("file url: %s" % file_url)
         file_dest = os.path.join(download_path, file_name+".zip")
         if not os.path.exists(file_dest):
-            logging.info("Downloading files: %d/%d --> %s" % (i+1, len(files), file_url))
+            logging.info("Downloading files: %d/%d --> %s" % (i+1, len(zipfiles), file_url))
             download_file(file_url, file_dest)
         else:
-            logging.info("File already exists: %d/%d --> %s" %(i+1, len(files), file_dest))
+            logging.info("File already exists: %d/%d --> %s" %(i+1, len(zipfiles), file_dest))
     return
 
 def extract_zip(src, dest):
@@ -51,7 +51,7 @@ def extract_zip(src, dest):
         zip.extractall(path=dest)
     return
 
-def extract_zips(download_path, extract_path, files):
+def extract_zips(download_path, extract_path, zipfiles):
     """
     Extract all the zip files.
     """
@@ -59,9 +59,9 @@ def extract_zips(download_path, extract_path, files):
     logging.info("Extracting files...")
     assert os.path.exists(download_path)
 
-    for zipf in files:
+    for zipf in zipfiles:
         output_file_path = os.path.join(extract_path, zipf.split(".")[0])
-        zip_file_path = os.path.join(download_path, zipf)
+        zip_file_path = os.path.join(download_path, zipf+".zip")
         if os.path.exists(zip_file_path):
             logging.info("Extracting file to: %s" % output_file_path)
             extract_zip(zip_file_path, output_file_path)
@@ -91,7 +91,7 @@ def get_arguments():
         '-log', '--log',
         type=str,
         required=False,
-        default="warning",
+        default="info",
         choices=["debug", "info", "warning", "error", "critical"],
         help="Provide logging level. Default is warning."
     )
