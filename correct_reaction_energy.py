@@ -1,13 +1,11 @@
-import os
+import logging
 import argparse
 import xyz2mol
-from collections import Counter
-from scm import plams
-from pathlib import Path
 
 
 eV2au = 0.03674930495120813 # Hartree
 eV2kcal = 23.060541945329334 # kcal/mole
+
 
 bonds_correction_pbe = {'C_d_C': -0.04720942012121344,
                         'C_t_C': -0.21051127696657002,
@@ -26,6 +24,7 @@ bonds_correction_pbe = {'C_d_C': -0.04720942012121344,
                         'N_d_N': 0.007537011973101717,
                         'N_N_A': 0.011176795612685095}
 
+
 bonds_correction_b3lypd = {'C_d_C': 0.11002126797437362,
                            'C_t_C': 0.12708094409389806,
                            'C_C_A': 0.06514956470815053,
@@ -42,6 +41,7 @@ bonds_correction_b3lypd = {'C_d_C': 0.11002126797437362,
                            'N_s_N': 0.06530770276077955,
                            'N_d_N': 0.09504374302205423,
                            'N_N_A': 0.014127992860272899}
+
 
 bonds_correction_m062x = {'C_d_C': -0.04875042692605581,
                           'C_t_C': -0.08714341858770626,
@@ -65,144 +65,188 @@ bonds_names_list = [k for k, v in bonds_correction_pbe.items()]
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="To calculate the energy correction using the LR results.")
-    parser.add_argument('--eunit',
-                        type=str,
-                        default='eV',
-                        choices=['eV', 'a.u.', 'kcal/mol'],
-                        help="Energy unit to be included.")
-    requiredNamed = parser.add_argument_group('required named arguments')
-    requiredNamed.add_argument('--react_xyz_files',
-                        type=str,
-                        nargs='+',
-                        default=None,
-                        help="Reactant xyz files")
-    requiredNamed.add_argument('--react_out_file',
-                        type=str,
-                        nargs='+',
-                        default=None,
-                        help="Reactant log/out file.")
-    requiredNamed.add_argument('--pdt_xyz_files',
-                        type=str,
-                        nargs='+',
-                        default=None,
-                        help="Product xyz files.")
-    requiredNamed.add_argument('--pdt_out_file',
-                        type=str,
-                        nargs='+',
-                        default=None,
-                        help="Product log/out file.")
-    requiredNamed.add_argument('--dft_functional',
-                        type=str,
-                        default=None,
-                        choices=["PBE", "B3LYP", "M062X"],
-                        help="Name of the DFT functional used to compute the energies")
+    parser = argparse.ArgumentParser(
+        description="To calculate the energy correction using the LR results."
+    )
+    parser.add_argument(
+        "-eunit", "--eunit",
+        type=str,
+        default="eV",
+        choices=["eV", "a.u.", "kcal/mol", "kJ/mol"],
+        help="Energy unit to be included."
+    )
+    parser.add_argument(
+        "-r", "--r",
+        type=str,
+        required=True,
+        nargs="+",
+        default=None,
+        help="Reactant log files in ADF format"
+    )
+    parser.add_argument(
+        "-p", "--p",
+        type=str,
+        required=True,
+        nargs="+",
+        default=None,
+        help="Product log files in ADF format."
+    )
+    parser.add_argument(
+        "-dft_functional", "--dft_functional",
+        type=str,
+        default=None,
+        required=True,
+        choices=["PBE", "B3LYP", "M062X"],
+        help="Name of the DFT functional used to compute the energies")
     return parser.parse_args()
 
 
-def get_bonds_count_from_xyz(xyzfile=None):
-    bonds_count_dict = {bonds: 0 for bonds in bonds_names_list}
-    atoms, charge, xyz_coordinates = xyz2mol.read_xyz_file(xyzfile)
-    mols = None
-    try:
-        mols = xyz2mol.xyz2mol(atoms, xyz_coordinates, charge=0,
-                               use_graph=True, allow_charged_fragments=False,
-                               embed_chiral=True, use_huckel=False)
-    except:
-        print("No mol object from the xyz file: %s " % xyzfile)
-        raise Warning("xyzfile not found")
-    if mols is not None:
-        for bond in mols[0].GetBonds():
-            # RDkit can consider a C=O bond (eg) as either C=O or O=C.
-            # So, to compare the strings, bonds from both the front side
-            # i.e., from C side and back side, i.e., O side is considered.
-            bname_front = None
-            bname_back = None
-            bond_type = bond.GetBondType()
-            atom1 = mols[0].GetAtomWithIdx(bond.GetBeginAtomIdx()).GetSymbol()
-            atom2 = mols[0].GetAtomWithIdx(bond.GetEndAtomIdx()).GetSymbol()
-            #print("debug: ", bond_type, atom1, atom2)
-            if str(bond_type) == "SINGLE":
-                bname_front = atom1 + "_" + "s_" + atom2
-                bname_back = atom2 + "_" + "s_" + atom1
-            if str(bond_type) == "DOUBLE":
-                bname_front = atom1 + "_" + "d_" + atom2
-                bname_back = atom2 + "_" + "d_" + atom1
-            if str(bond_type) == "TRIPLE":
-                bname_front = atom1 + "_" + "t_" + atom2
-                bname_back = atom2 + "_" + "t_" + atom1
-            if str(bond_type) == "AROMATIC":
-                bname_front = atom1 + "_" + atom2 + "_" + "A"
-                bname_back = atom2 + "_" + atom1 + "_" + "A"
-            if str(bond_type) not in ['SINGLE', 'DOUBLE', 'TRIPLE', 'AROMATIC']:
-                print("Unknown bond type: ", bond_type, " Will not provide correction")
-            if bname_front in bonds_count_dict:
-                bonds_count_dict[bname_front] += 1
-            elif bname_back in bonds_count_dict:
-                bonds_count_dict[bname_back] += 1
+def get_coords_frm_adflog(logfile):
+    line_nos = []
+    atoms = []
+    coords = []
+    with open(logfile) as flog:
+        for line_no, line in enumerate(flog, 1):
+            if line.strip() == "Atoms":
+                line_nos.append(line_no)
+
+    with open(logfile) as flog:
+        last_coords_to_end = flog.readlines()[(line_nos[-1]+1):]
+        for line in last_coords_to_end:
+            splitline = line.split()
+            if len(splitline) == 5:
+                atoms.append(splitline[1])
+                icoord = [
+                    float(splitline[2]),
+                    float(splitline[3]),
+                    float(splitline[4])
+                ]
+                coords.append(icoord)
             else:
-                print("Bonds either: %s or: %s does not exists in the bonds list" % (bname_front, bname_back))
-    else:
-        raise Warning("RDKit mol object not found. Conversion problem")
-    return bonds_count_dict
+                break
+    assert len(atoms) == len(coords)
+    return atoms, coords
 
 
-def get_dft_energy(outfile, unit='eV'):
-    """This function returns the energy in hartree and ev unit. Implementation only for SCM.
-       outdir is the directory where scm job ran."""
-    energy = None
-    with open(outfile) as fp:
+def get_energy(logfile, eunit):
+    len_content = ""
+    energy = 0.0
+    with open(logfile) as fp:
         for lines in fp.readlines():
-            if "Bond Energy" in lines:
-                line_content = lines.split()
-                energy = float(line_content[-2])
-                enunit = line_content[-1]
-                if enunit == unit:
-                    break
+            if "Total Bonding Energy:" in lines:
+                len_content = lines
+    if len_content:
+        splitted_line = len_content.split()
+        if eunit == "a.u.":
+            energy = float(splitted_line[3])
+        elif eunit == "eV":
+            energy = float(splitted_line[4])
+        elif eunit == "kcal/mol":
+            energy = float(splitted_line[5])
+        elif eunit == "kJ/mol":
+            energy = float(splitted_line[6])
+        else:
+            logging.error("Unit not recognized: %s" % eunit)
     return energy
 
 
-def main():
-    args = parse_arguments()
-    print("List of bonds to be corrected: ", bonds_names_list)
-    # first get the bond list and the energies for each of the reactants and products.
+def get_mol_data_from_adf_logs(logfiles, eunit=None):
+    if eunit is None:
+        eunit = "eV"
+    bonds_count_dict = {bonds: 0 for bonds in bonds_names_list}
     dft_energy = 0.0
-    reaction_bond_change_dict = {bond: 0 for bond in bonds_names_list}
-    nreactant = len(args.react_xyz_files)
-    eunit = args.eunit
-    for i in range(nreactant):
-        react_xyz = args.react_xyz_files[i]
-        react_out_file = args.react_out_file[i]
-        for k, v in get_bonds_count_from_xyz(react_xyz).items():
-            reaction_bond_change_dict[k] -= v
-        # for the reactant side, the energy will be subtracted.
-        dft_energy -= get_dft_energy(react_out_file, unit=eunit)
-        print("reactant: ", reaction_bond_change_dict)
-    npdt = len(args.pdt_xyz_files)
-    for i in range(npdt):
-        pdt_xyz = args.pdt_xyz_files[i]
-        pdt_out_file = args.pdt_out_file[i]
-        for k,v in get_bonds_count_from_xyz(pdt_xyz).items():
-            reaction_bond_change_dict[k] += v
-        print("product: ", reaction_bond_change_dict)
-        # for the product side, the energy will be added.
-        dft_energy += get_dft_energy(pdt_out_file, unit=eunit)
-    # correction to be done from the coefficients
-    print("DFT reaction energy: %f %s" %(dft_energy, eunit))
-    print("bond changes: ", reaction_bond_change_dict)
-    if args.dft_functional == "PBE":
-        correction_dict = bonds_correction_pbe
-    elif args.dft_functional == "B3LYP":
-        correction_dict = bonds_correction_b3lypd
-    elif args.dft_functional == "M062X":
-        correction_dict = bonds_correction_m062x
-    for k, v in reaction_bond_change_dict.items():
+    for logfile in logfiles:
+        atoms, coords = get_coords_frm_adflog(logfile)
+        atoms = [xyz2mol.int_atom(atom) for atom in atoms]
+        dft_energy += get_energy(logfile, eunit)
+        mols = None
+        logging.debug("atoms: %s" % atoms)
+        logging.debug("coords: %s" % coords)
+        try:
+            mols = xyz2mol.xyz2mol(atoms, coords, charge=0.0,
+                               use_graph=True, allow_charged_fragments=False,
+                               embed_chiral=True, use_huckel=False)
+        except:
+            logging.warning("Failed to convert mol object for file %s" % logfile)
+
+        if mols is not None:
+            for bond in mols[0].GetBonds():
+                # RDkit can consider a C=O bond (eg) as either C=O or O=C.
+                # So, to compare the strings, bonds from both the front side
+                # i.e., from C side and back side, i.e., O side is considered.
+                bname_front = None
+                bname_back = None
+                bond_type = bond.GetBondType()
+                atom1 = mols[0].GetAtomWithIdx(bond.GetBeginAtomIdx()).GetSymbol()
+                atom2 = mols[0].GetAtomWithIdx(bond.GetEndAtomIdx()).GetSymbol()
+                if str(bond_type) == "SINGLE":
+                    bname_front = atom1 + "_" + "s_" + atom2
+                    bname_back = atom2 + "_" + "s_" + atom1
+                if str(bond_type) == "DOUBLE":
+                    bname_front = atom1 + "_" + "d_" + atom2
+                    bname_back = atom2 + "_" + "d_" + atom1
+                if str(bond_type) == "TRIPLE":
+                    bname_front = atom1 + "_" + "t_" + atom2
+                    bname_back = atom2 + "_" + "t_" + atom1
+                if str(bond_type) == "AROMATIC":
+                    bname_front = atom1 + "_" + atom2 + "_" + "A"
+                    bname_back = atom2 + "_" + atom1 + "_" + "A"
+                if str(bond_type) not in ['SINGLE', 'DOUBLE', 'TRIPLE', 'AROMATIC']:
+                    logging.warning("Unknown bond type: ", bond_type, " Will not provide correction")
+                if bname_front in bonds_count_dict:
+                    bonds_count_dict[bname_front] += 1
+                elif bname_back in bonds_count_dict:
+                    bonds_count_dict[bname_back] += 1
+                else:
+                    logging.warning(
+                        "No correction term for: %s or %s" % (bname_front, bname_back)
+                    )
+    return dft_energy, bonds_count_dict
+
+
+def get_bond_correction(reactant_bond_dict, pdt_bond_dict, lr_coeff_dict, eunit):
+    total_correction = 0.0
+    for k, v in reactant_bond_dict.items():
         if eunit == "kcal/mol":
             v = v*eV2kcal
         if eunit == "a.u.":
             v = v*eV2au
-        dft_energy += v * correction_dict[k]
-    print("Error corrected reaction energy: %f %s" %(dft_energy, eunit))
+        total_correction -= v*lr_coeff_dict[k]
+    for k, v in pdt_bond_dict.items():
+        if eunit == "kcal/mol":
+            v = v*eV2kcal
+        if eunit == "a.u.":
+            v = v*eV2au
+        total_correction += v*lr_coeff_dict[k]
+    return total_correction
+
+
+def main():
+    args = parse_arguments()
+    reactant_log_files = args.r
+    product_log_files = args.p
+    eunit = args.eunit
+    dft_functional = args.dft_functional
+    reactant_energy, reactant_bond_dict = get_mol_data_from_adf_logs(
+        reactant_log_files, eunit=eunit
+    )
+    pdt_energy, pdt_bond_dict = get_mol_data_from_adf_logs(
+        product_log_files, eunit=eunit
+    )
+    lr_coeff_dict = {}
+    if dft_functional == "PBE":
+        lr_coeff_dict = bonds_correction_pbe
+    elif dft_functional == "B3LYP":
+        lr_coeff_dict = bonds_correction_b3lypd
+    elif dft_functional == "M062X":
+        lr_coeff_dict = bonds_correction_m062x
+    reaction_energy = pdt_energy - reactant_energy
+    total_bond_correction = get_bond_correction(
+        reactant_bond_dict, pdt_bond_dict, lr_coeff_dict, eunit
+    )
+    print("DFT energy: %10.2f %s" % (reaction_energy, eunit))
+    print("DFT corrected energy: %10.2f %s" % ((reaction_energy + total_bond_correction), eunit))
+    print("Correction to DFT: %10.2f %s" % (total_bond_correction, eunit))
     return
 
 
