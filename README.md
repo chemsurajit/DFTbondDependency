@@ -11,7 +11,7 @@ Dependency:
 7) statsmodel
 8) sklearn
 
-To install the xyz2mol package, visit:https://github.com/jensengroup/xyz2mol.git
+To install the xyz2mol package, visit: https://github.com/jensengroup/xyz2mol.git
 
 All the other packages are part of standard Python library and can be installed with either Conda or PIP.
 
