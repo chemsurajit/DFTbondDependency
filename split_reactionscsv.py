@@ -25,6 +25,12 @@ def get_arguments():
 
 
 def split_list(indices, nnode):
+    """
+    split the list of indices according to the number of noes.
+    :param indices: list of indices of the reactions.csv file
+    :param nnode: Number of nodes
+    :return: list of lists containing the indices
+    """
     #link: https://stackoverflow.com/questions/2130016/splitting-a-list-into-n-parts-of-approximately-equal-length
     k, m = divmod(len(indices), nnode)
     return (indices[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(nnode))

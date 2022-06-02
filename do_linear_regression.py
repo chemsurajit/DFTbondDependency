@@ -7,6 +7,9 @@ from sklearn.linear_model import LinearRegression
 import statsmodels.api as sma
 from scipy import stats
 
+"""
+Script to perform the linear regression.
+"""
 
 bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
               'C_d_O', 'C_O_A', 'C_s_N', 'C_d_N', 'C_t_N', 'C_N_A',
@@ -14,7 +17,13 @@ bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
               'N_N_A', 'N_s_H']
 
 
-def compute_statmodel_linear_regression(csv_files, dft_functional, output):
+def compute_statmodel_linear_regression(csv_files, dft_functional):
+    """
+    This function is for performing the linear regression using the statsmodel package. It is not used.
+    :param csv_files: csv file containing reactions data
+    :param dft_functional: Name of the DFT functional
+    :return: None
+    """
     val_x = []
     val_y = []
     for csvf in csv_files:
@@ -44,6 +53,13 @@ def compute_statmodel_linear_regression(csv_files, dft_functional, output):
 
 
 def compute_sklearn_linear_regression(csv_files, dft_functional, output):
+    """
+    Function to perform linear regression using sklearn.
+    :param csv_files: csv file containing reaction data
+    :param dft_functional: Name of the DFT functional
+    :param output: csv filename to print out the result
+    :return: None
+    """
     val_x = []
     val_y = []
     for csvf in csv_files:
@@ -96,7 +112,9 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
 
 
 def get_csv_files(csv_dir, match=None):
-    """This function returns a list of csv files with matching pattern Reaction_*.csv."""
+    """
+    This function returns a list of csv files with matching pattern Reaction_*.csv.
+    """
     files = []
     cwd = os.getcwd()
     os.chdir(csv_dir)
@@ -109,7 +127,12 @@ def get_csv_files(csv_dir, match=None):
 
 
 def get_arguments():
-    parser = argparse.ArgumentParser("Script to perform linear regression for different DFT functionals.")
+    """
+    Function to process arguements.
+    """
+    parser = argparse.ArgumentParser(
+        "Script to perform linear regression for different DFT functionals."
+    )
     parser.add_argument(
         "-data_dir", "--data_dir",
         type=str,

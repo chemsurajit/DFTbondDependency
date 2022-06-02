@@ -279,6 +279,12 @@ def get_smiles_from_xyz(ixyzfile):
 
 
 def update_failed_indices(outputfile, indices):
+    """
+    Write the indices for which there was problem converting xyz to mol string.
+    :param outputfile: filename where to save the indices
+    :param indices: list of indices
+    :return: None
+    """
     if not indices:
         logging.warning("Number of failed indices = ", len(indices))
         logging.warning("No file will be created.")
@@ -297,7 +303,8 @@ def update_pd_df(inpdf,
                  chemformula=None,
                  bonds=None,
                  energies=None):
-    """Function to update to dataframe
+    """
+    Function to update to dataframe
     """
     row_dict = {"index":index,
                 "smiles":smiles,

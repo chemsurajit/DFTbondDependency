@@ -5,6 +5,11 @@ import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 
+
+"""
+This script is to detect correlation between variables using variance inflation factor.
+"""
+
 # This list of bonds are hard coded as only these bonds are found to
 # be changing in the QM9 dataset.
 bonds_list = ['C_d_C', 'C_t_C', 'C_C_A', 'C_s_O',
@@ -13,6 +18,13 @@ bonds_list = ['C_d_C', 'C_t_C', 'C_C_A', 'C_s_O',
               'O_N_A', 'N_s_N', 'N_d_N', 'N_N_A']
 
 def detect_correlation(csv_files, output, frac=0.1):
+    """
+    The main function.
+    :param csv_files: list of csv files containing reaction data
+    :param output: csv filename to save the result
+    :param frac: fraction of data to be used for the calculation
+    :return: None
+    """
     df_collect = []
     for csvf in csv_files:
         nchunk = 0
@@ -44,7 +56,9 @@ def detect_correlation(csv_files, output, frac=0.1):
 
 
 def get_csv_files(csv_dir, match=None):
-    """This function returns a list of csv files with matching pattern Reaction_*.csv."""
+    """
+    This function returns a list of csv files with matching pattern Reaction_*.csv.
+    """
     files = []
     cwd = os.getcwd()
     # if no match provided, all csv files will be read.
@@ -58,6 +72,9 @@ def get_csv_files(csv_dir, match=None):
 
 
 def get_arguments():
+    """
+    function to process arguments.
+    """
     parser = argparse.ArgumentParser("Script to perform correlation detection using VIF.")
     parser.add_argument(
         "-data_dir", "--data_dir",

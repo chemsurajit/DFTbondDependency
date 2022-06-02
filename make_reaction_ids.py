@@ -7,7 +7,9 @@ import time
 
 
 def find_reactions(molecule_csv_file, output=""):
-    """function to create csv files with reactant and product ids."""
+    """
+    function to create csv files with reactant and product ids.
+    """
     # reading from csv file containing molecules data but only 4 cols.
     mol_csv_data = pd.read_csv(molecule_csv_file, usecols=["index", "smiles", "chemformula"])
     indices = mol_csv_data["index"].tolist()

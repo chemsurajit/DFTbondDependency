@@ -8,6 +8,8 @@ Dependency:
 4) csv
 5) Numpy
 6) requests
+7) statsmodel
+8) sklearn
 
 To install the xyz2mol package, visit:https://github.com/jensengroup/xyz2mol.git
 

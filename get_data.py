@@ -9,7 +9,8 @@ import argparse
 
 def download_file(url, dest):
     """
-    Download files from the url given. In this case, it is DTU Data.
+    Download files from the given url. In this case, it is DTU Data.
+    Destination is directory where it will be saved.
     """
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
