@@ -1,5 +1,5 @@
 # DFTbondDependency
-1) Repository for bond dependency paper
+Repository for bond dependency paper
 
 Dependency:
 1) RDKit
@@ -15,6 +15,8 @@ To install the xyz2mol package, visit:https://github.com/jensengroup/xyz2mol.git
 
 All the other packages are part of standard Python library and can be installed with either Conda or PIP.
 
+If this repository is used, please cite. Citation format can be downloaded by clicking the link: 
+"Cite this repository" in the right side panel.
 
 Description of the Data.
 The data is part of the SURE project and can be downloaded from: <link>
@@ -48,17 +50,19 @@ containing the indices of the csv file with "reactantindex","pdtindex".
 6) submit.sh: An example submit script to run make_reactions_parallel.py in a single node with multiple processors.
 It is called from the script process_reaction_conversion_jobs.sh. It is written for the slurm scheduler.
 
-8) detect_correlation.py: This script is for detecting correlation between the variables (bonds). It takes
+7) detect_correlation.py: This script is for detecting correlation between the variables (bonds). It takes
 the directory location of the csv files containing all the reaction data (created by the process_reaction_conversion_jobs.sh)
 script. By default, it randomly chose 10% of the total data to detect correlation.
 
-9) do_linear_regression.py: This script performs the linear regression between the bond change and the DFT error to
+8) do_linear_regression.py: This script performs the linear regression between the bond change and the DFT error to
 reaction energies. It takes as argument the directory location for the reaction data file, and the name of the DFT
 functionals.
 
-10) correct_reaction_energy.py: This script calculates the reaction energy and the correction to it for a given DFT functional.
+9) correct_reaction_energy.py: This script calculates the reaction energy and the correction to it for a given DFT functional.
 It takes as input the log files of reactants (with the option -r), products (with the option -p), and name of the
 DFT functional and prints out the reaction energy for the DFT functional, the correction, and the corrected reaction energy.
+
+10) CITATION.cff: This file is to provide citation data for this repository in bibtex or APA format.
 
 How to run:
 The help message for each of the files (except submit.sh) can be obtained by running the corresponding
