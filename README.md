@@ -7,8 +7,9 @@ Dependency:
 3) pandas
 4) csv
 5) Numpy
+6) requests
 
-To install the xyz2mol package, consult the webpage:https://github.com/jensengroup/xyz2mol.git
+To install the xyz2mol package, visit:https://github.com/jensengroup/xyz2mol.git
 
 All the other packages are part of standard Python library and can be installed with either Conda or PIP.
 
@@ -17,27 +18,46 @@ Description of the Data.
 The data is part of the SURE project and can be downloaded from: <link>
 
 Description of the codes.
-This repository contains three python scripts to be run serially.
-The scripts and their purpose is explained below:
-1) get_bond_data.py
-This script will download the data from the website <link> as zip file. Then, it will extract the zip files into the directory csvs.
-Three type of files will be downloaded.
-a) The log files from SCM calculation for all the molecules in energy refined QM9 database (link). The extracted data will be saved into the atoms and molecules subdirectories and the corresponding csv files atoms.csv and molecules.csv file will be stored.
-b) The <qm9_molecules_bonds_energies.csv> file which contains the bonds and energies of the QM9 molecules.
-c) The <reactions.csv> file which contains the indices of the reactant and products. The indices indicates the index column of the molecule dataset.
+The repository contains python scripts the calculations described in the paper: <link after submission>
+1) get_data.py: This script will download data from the DTU Data website. The public link to the website
+will be available upon acceptance of the paper. This file will download either all the files from the 
+database (if -all/--all option is given) Or it will only download the xyzfiles and the log files of the
+energy calculations
 
-2) make_qm9_mol_bonds_ens.py
-This script will create the csv files described above from the log files inside "TZP" directory.
-3) make_reactions_bonds_ens.py
-This script will create the csv file for the bond changes and reaction energies from the qm9_mols.csv, and reactions.csv files.
-It additionally neads a csv file containing the QM9 molecular indices and the G4MP2 energy values (Which is provided as a supporting info in the paper: <link>)
+2) make_molecule_bond_en_csv.py: This file makes a csv file containing energy values, list of bonds, SMILES
+string, chemical formula, etc from the xyzfiles and logfiles downloaded by using the get_data.py script.
 
-4) do_lr_regression.py
-This script will perform the linear regression described in paper <link> using the data and provide the coefficients in a csv file.
+3) make_reaction_ids.py: This script will create a csv file with only two columns: 'reactantindex','pdtindex'.
+The indices are the index of the molecules in the csv file made by the make_molecule_bond_en_csv.py script.
 
-5) calculate_reaction_energy.py
-This script will calculate the reaction energy from the LR coefficients found by the above scrpt.
-It will correct the energy and provide the reaction energy in PBE/B3LYP-D/M06-2X and in G4MP2 level of theory.
+4) process_reaction_conversion_jobs.sh: This is a bash script to create the final csv file containing
+all the information related to the reactions. It takes the csv file containing molecular data (created by the
+script make_molecule_bond_en_csv.py), the indices of the reactants and products in form of a csv file
+(created by using the script make_reaction_ids.py), The G4MP2 energies of the molecules as csv file (with
+index and energy), the path of the python script make_reactions_parallel.py, number of Nodes to be used,
+and number of processors per each nodes.
+It first split the csv file containing indices of the reactants and products according to the number of Nodes
+and saves those in a json file with names Node_n.json with n from {1,2,...n} if n number of nodes are used.
 
+5) make_reactions_parallel.py: This file takes csv file containing indices for the reactions, csv file containing
+all the data of the molecules, csv file containing G4MP2 energy, number of processors, json file
+containing the indices of the csv file with "reactantindex","pdtindex".
+
+6) submit.sh: An example submit script to run make_reactions_parallel.py in a single node with multiple processors.
+It is called from the script process_reaction_conversion_jobs.sh. It is written for the slurm scheduler.
+
+8) detect_correlation.py: This script is for detecting correlation between the variables (bonds). It takes
+the directory location of the csv files containing all the reaction data (created by the process_reaction_conversion_jobs.sh)
+script. By default, it randomly chose 10% of the total data to detect correlation.
+
+9) do_linear_regression.py: This script performs the linear regression between the bond change and the DFT error to
+reaction energies. It takes as argument the directory location for the reaction data file, and the name of the DFT
+functionals.
+
+10) correct_reaction_energy.py: This script calculates the reaction energy and the correction to it for a given DFT functional.
+It takes as input the log files of reactants (with the option -r), products (with the option -p), and name of the
+DFT functional and prints out the reaction energy for the DFT functional, the correction, and the corrected reaction energy.
 
 How to run:
+The help message for each of the files (except submit.sh) can be obtained by running the corresponding
+script with -h.
