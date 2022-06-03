@@ -274,7 +274,7 @@ def get_smiles_from_xyz(ixyzfile):
                                embed_chiral=True, use_huckel=False)
     except:
         mols = None
-        logging.warning("No mol object from the xyz file: ", ixyzfile)
+        logging.warning("No mol object from the xyz file: %s" % ixyzfile)
     return mols
 
 
@@ -286,10 +286,10 @@ def update_failed_indices(outputfile, indices):
     :return: None
     """
     if not indices:
-        logging.warning("Number of failed indices = ", len(indices))
-        logging.warning("No file will be created.")
+        logging.info("Number of failed indices = %d" % len(indices))
+        logging.info("No file will be created.")
     else:
-        logging.warning("Number of failed indices = ", len(indices))
+        logging.warning("Number of failed indices = %d" % len(indices))
         logging.warning("The indices will be updated to: %s" % outputfile)
         with open(outputfile, 'w') as fp:
             for index in indices:
@@ -321,34 +321,53 @@ def get_arguments():
     Function to parse arguments.
     """
     parser = argparse.ArgumentParser("File to create bond list from xyz file.")
-    parser.add_argument("-xyz_dir", "--xyz_dir",
-                        help="Location of the xyz directory. Default is current directory.",
-                        type=str,
-                        required=True)
-    parser.add_argument("-log_dir", "--log_dir",
-                        help="Location of the directory from where the logfiles will be read.",
-                        type=str,
-                        required=True)
-    #parser.add_argument("-g4mp2_csvfile", "--g4mp2_csvfile",
-    #                    help="Location of the csv file containing G4MP2 energies of the QM9 dataset.",
-    #                    type=str,
-    #                    required=True)
-    parser.add_argument("-output", '--output',
-                        help="Name of the output file. Should end with csv",
-                        type=str,
-                        required=False,
-                        default="qm9_bonds_energies.csv")
-    parser.add_argument('-failed_file', '--failed_file',
-                        help="File in which to update the indices where processing failed",
-                        type=str,
-                        required=False,
-                        default='failed_indices.dat')
+    parser.add_argument(
+            "-xyz_dir", "--xyz_dir",
+            help="Location of the xyz directory. Default is current directory.",
+            type=str,
+            required=True
+            )
+    parser.add_argument(
+            "-log_dir", "--log_dir",
+            help="Location of the directory from where the logfiles will be read.",
+            type=str,
+            required=True
+            )
+    parser.add_argument(
+            "-output", '--output',
+            help="Name of the output file. Should end with csv",
+            type=str,
+            required=False,
+            default="qm9_bonds_energies.csv"
+            )
+    parser.add_argument(
+            "-failed_file", "--failed_file",
+            help="File in which to update the indices where processing failed",
+            type=str,
+            required=False,
+            default="failed_indices.dat"
+            )
+    parser.add_argument(
+            "-log", "--log",
+            type=str,
+            required=False,
+            default="info",
+            choices=["debug", "info", "warning", "error", "critical"],
+            help="Provide logging level. Default is info."
+            )
     return parser.parse_args()
 
 
 def main():
     args = get_arguments()
-    xyz_direcotory = os.path.abspath(args.xyz_dir)
+    log_level = args.log.upper()
+    #setup the logging level
+    logging.basicConfig(
+            format="[%(asctime)s] %(levelname)s: %(message)s",
+            level=log_level,
+            datefmt="%H:%M:%S",
+            )
+    xyz_directory = os.path.abspath(args.xyz_dir)
     log_dir = args.log_dir
     #qm9_g4pm2_csv = args.g4mp2_csvfile
     output_csv = args.output
@@ -356,10 +375,10 @@ def main():
     #Since in the QM9_G4MP2 dataset, the filename convention starts
     # with dsgdb9nsd_*.xyz, the match strings are chosen accordingly.
     failed_mols_indices = []
-    logging.info("Directory containing xyz files: ", xyz_direcotory)
-    xyzfiles = get_files(xyz_direcoty, match='dsgdb9nsd_*.xyz')
+    logging.debug("Directory containing xyz files: %s" % xyz_directory)
+    xyzfiles = get_files(xyz_directory, match='dsgdb9nsd_*.xyz')
     logfiles = get_files(log_dir, match='*_xyz.out')
-    logging.info("Number of xyz files: ", len(xyzfiles))
+    logging.debug("Number of xyz files: %d" % len(xyzfiles))
     df = pd.DataFrame()
     #g4mp2_pd = pd.read_csv(qm9_g4pm2_csv)
     for i in range(len(xyzfiles)):
@@ -369,19 +388,19 @@ def main():
         xyzindex = os.path.basename(ixyzfile).split("_")[1].split(".")[0]
         if logindex != xyzindex:
             logging.error("The index in logfile and xyzfiles are not same.")
-            logging.error("Xyzfile: ", ixyzfile)
-            logging.error("logfile: ", ilogfile)
+            logging.error("Xyzfile: %s" % ixyzfile)
+            logging.error("logfile: %s" % ilogfile)
             break
         logging.debug("logindex, ilogfile, ixyzfile: %s %s %s" % (logindex, ilogfile, ixyzfile))
         dft_energies = get_dft_energies(os.path.abspath(ilogfile))
         if not dft_energies:
-            logging.error("No dft energies found for index: ", logindex)
+            logging.error("No dft energies found for index: %d" % int(logindex))
             failed_mols_indices.append(logindex)
             continue
             # Get the smile string using the xyz2mol module.
         mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
-            logging.info("Failed to convert xyz to smiles string: ", ixyzfile)
+            logging.info("Failed to convert xyz to smiles string: %s" % ixyzfile)
             failed_mols_indices.append(xyzindex)
             continue
         bonds_list = mol_to_bonds_list(mols[0], ixyzfile)
@@ -397,8 +416,8 @@ def main():
                           chemformula=chemformula,
                           bonds=bonds_list,
                           energies=dft_energies)
-        if (i % 10000) == 0:
-            logging.info("Number of molecules converted: %d" % i)
+        if ((i+1) % 10000) == 0:
+            logging.info("Number of molecules converted: %d" % (i+1))
     #write to csv file.
     df.to_csv(output_csv, sep=",", index=False, quoting=csv.QUOTE_MINIMAL, na_rep='nan')
     update_failed_indices(failed_output, failed_mols_indices)
