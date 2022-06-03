@@ -400,7 +400,7 @@ def main():
             # Get the smile string using the xyz2mol module.
         mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
-            logging.info("Failed to convert xyz to smiles string: %s" % ixyzfile)
+            logging.debug("Failed to convert xyz to smiles string: %s" % ixyzfile)
             failed_mols_indices.append(xyzindex)
             continue
         bonds_list = mol_to_bonds_list(mols[0], ixyzfile)
