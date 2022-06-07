@@ -1,3 +1,4 @@
+import sys
 import logging
 import argparse
 import xyz2mol
@@ -96,8 +97,15 @@ def parse_arguments():
         type=str,
         default=None,
         required=True,
-        choices=["PBE", "B3LYP", "M062X"],
-        help="Name of the DFT functional used to compute the energies")
+        choices=["PBE", "B3LYP-D", "M06-2X"],
+        help="Name of the DFT functional used to compute the energies"
+    )
+    parser.add_argument(
+        "-postscf", "--postscf",
+        required=False,
+        action="store_true",
+        help="Switch that indicates whether the energies were computed with postSCF or not."
+    )
     return parser.parse_args()
 
 
@@ -128,29 +136,51 @@ def get_coords_frm_adflog(logfile):
     return atoms, coords
 
 
-def get_energy(logfile, eunit):
+def get_energy(logfile, eunit, dft_functional, post_scf):
     len_content = ""
     energy = 0.0
     with open(logfile) as fp:
-        for lines in fp.readlines():
-            if "Total Bonding Energy:" in lines:
-                len_content = lines
-    if len_content:
-        splitted_line = len_content.split()
-        if eunit == "a.u.":
-            energy = float(splitted_line[3])
-        elif eunit == "eV":
-            energy = float(splitted_line[4])
-        elif eunit == "kcal/mol":
-            energy = float(splitted_line[5])
-        elif eunit == "kJ/mol":
-            energy = float(splitted_line[6])
+        if post_scf:
+            en_dict = {}
+            for lines in fp.readlines():
+                if "FR:" in lines:
+                    functional = lines[4:19].strip().upper()
+                    if eunit == "a.u.":
+                        fid = 0
+                    elif eunit == "eV":
+                        fid = 1
+                    elif eunit == "kcal/mol":
+                        fid = 2
+                    elif eunit == "kJ/mol":
+                        fid = 3
+                    en = float(lines.split("=")[1].split()[fid])
+                    en_dict[functional] = en
+            if dft_functional in en_dict:
+                energy = en_dict[dft_functional]
+            else:
+                logging.error("Energy for postSCF DFT (%s) not found in %s" % (dft_functional, logging))
         else:
-            logging.error("Unit not recognized: %s" % eunit)
+            for lines in fp.readlines():
+                if "Total Bonding Energy:" in lines:
+                    len_content = lines
+                if len_content:
+                    splitted_line = len_content.split()
+                    if eunit == "a.u.":
+                        energy = float(splitted_line[3])
+                    elif eunit == "eV":
+                        energy = float(splitted_line[4])
+                    elif eunit == "kcal/mol":
+                        energy = float(splitted_line[5])
+                    elif eunit == "kJ/mol":
+                        energy = float(splitted_line[6])
+                    else:
+                        logging.error("Unit not recognized: %s" % eunit)
+                else:
+                    logging.error("Log file: %s doesn't contain energy." % logfile)
     return energy
 
 
-def get_mol_data_from_adf_logs(logfiles, eunit=None):
+def get_mol_data_from_adf_logs(logfiles, post_scf, dft_functional, eunit=None):
     if eunit is None:
         eunit = "eV"
     bonds_count_dict = {bonds: 0 for bonds in bonds_names_list}
@@ -158,7 +188,7 @@ def get_mol_data_from_adf_logs(logfiles, eunit=None):
     for logfile in logfiles:
         atoms, coords = get_coords_frm_adflog(logfile)
         atoms = [xyz2mol.int_atom(atom) for atom in atoms]
-        dft_energy += get_energy(logfile, eunit)
+        dft_energy += get_energy(logfile, eunit, dft_functional, post_scf)
         mols = None
         logging.debug("atoms: %s" % atoms)
         logging.debug("coords: %s" % coords)
@@ -226,27 +256,28 @@ def main():
     reactant_log_files = args.r
     product_log_files = args.p
     eunit = args.eunit
+    post_scf = args.postscf
     dft_functional = args.dft_functional
     reactant_energy, reactant_bond_dict = get_mol_data_from_adf_logs(
-        reactant_log_files, eunit=eunit
+        reactant_log_files, post_scf, dft_functional, eunit=eunit
     )
     pdt_energy, pdt_bond_dict = get_mol_data_from_adf_logs(
-        product_log_files, eunit=eunit
+        product_log_files, post_scf, dft_functional, eunit=eunit
     )
     lr_coeff_dict = {}
     if dft_functional == "PBE":
         lr_coeff_dict = bonds_correction_pbe
-    elif dft_functional == "B3LYP":
+    elif dft_functional == "B3LYP-D":
         lr_coeff_dict = bonds_correction_b3lypd
-    elif dft_functional == "M062X":
+    elif dft_functional == "M06-2X":
         lr_coeff_dict = bonds_correction_m062x
     reaction_energy = pdt_energy - reactant_energy
     total_bond_correction = get_bond_correction(
         reactant_bond_dict, pdt_bond_dict, lr_coeff_dict, eunit
     )
-    print("DFT energy: %10.2f %s" % (reaction_energy, eunit))
-    print("DFT corrected energy: %10.2f %s" % ((reaction_energy + total_bond_correction), eunit))
-    print("Correction to DFT: %10.2f %s" % (total_bond_correction, eunit))
+    print("%s energy: %f %s" % (dft_functional, reaction_energy, eunit))
+    print("%s corrected energy: %f %s" % (dft_functional, (reaction_energy + total_bond_correction), eunit))
+    print("Correction to %s: %f %s" % (dft_functional, total_bond_correction, eunit))
     return
 
 
