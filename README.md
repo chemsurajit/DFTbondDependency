@@ -1,7 +1,7 @@
 # DFTbondDependency
 Repository for bond dependency paper
 
-Dependency:
+## Dependency:
 1) RDKit
 2) xyz2mol
 3) pandas
