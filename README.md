@@ -13,16 +13,16 @@ Dependency:
 
 To install the xyz2mol package, visit: https://github.com/jensengroup/xyz2mol.git
 
-All the other packages are part of standard Python library and can be installed with either Conda or PIP.
+All the other packages are part of standard Python library and can be installed with either Conda, PIP, etc.
 
-If this repository is used, please cite. Citation format can be downloaded by clicking the link: 
+If this repository is used, please cite us. Citation format can be downloaded by clicking the link: 
 "Cite this repository" in the right side panel.
 
-Description of the Data.
-The data is part of the SURE project and can be downloaded from: <link>
+## Description of the Data.
+The data is not publicly available now. It will be publicly available upon acceptance of our paper in a peer-reviewed journal. The preprint can be downloaded from: <link>
 
-Description of the codes.
-The repository contains python scripts the calculations described in the paper: <link after submission>
+## Description of the codes.
+The repository contains python scripts for the calculations described in the paper: <link after submission>
 1) get_data.py: This script will download data from the DTU Data website. The public link to the website
 will be available upon acceptance of the paper. This file will download either all the files from the 
 database (if -all/--all option is given) Or it will only download the xyzfiles and the log files of the
@@ -67,3 +67,12 @@ DFT functional and prints out the reaction energy for the DFT functional, the co
 How to run:
 The help message for each of the files (except submit.sh) can be obtained by running the corresponding
 script with -h.
+
+
+The steps described in the paper can be followed by running the below scripts in the following sequence: 
+a. get_data.py
+b. make_molecule_bond_en_csv.py
+c. make_reaction_ids.py
+d. process_reaction_conversion_jobs.sh, make_reactions_parallel.py, submit.sh
+e. detect_correlation.py
+f. do_linear_regression.py
