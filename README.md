@@ -76,3 +76,6 @@ The steps described in the paper can be followed by running the below scripts in
 4. process_reaction_conversion_jobs.sh, make_reactions_parallel.py, submit.sh
 5. detect_correlation.py
 6. do_linear_regression.py
+
+## License:
+All the scripts in this repository are covered under the MIT license terms (LICENSE.txt).
