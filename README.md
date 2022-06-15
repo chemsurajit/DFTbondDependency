@@ -64,15 +64,15 @@ DFT functional and prints out the reaction energy for the DFT functional, the co
 
 10) CITATION.cff: This file is to provide citation data for this repository in bibtex or APA format.
 
-How to run:
+## How to run:
 The help message for each of the files (except submit.sh) can be obtained by running the corresponding
 script with -h.
 
 
 The steps described in the paper can be followed by running the below scripts in the following sequence: 
-a. get_data.py
-b. make_molecule_bond_en_csv.py
-c. make_reaction_ids.py
-d. process_reaction_conversion_jobs.sh, make_reactions_parallel.py, submit.sh
-e. detect_correlation.py
-f. do_linear_regression.py
+1. get_data.py
+2. make_molecule_bond_en_csv.py
+3. make_reaction_ids.py
+4. process_reaction_conversion_jobs.sh, make_reactions_parallel.py, submit.sh
+5. detect_correlation.py
+6. do_linear_regression.py
