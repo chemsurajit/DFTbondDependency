@@ -15,14 +15,15 @@ To install the xyz2mol package, visit: https://github.com/jensengroup/xyz2mol.gi
 
 All the other packages are part of standard Python library and can be installed with either Conda, PIP, etc.
 
-If this repository is used, please cite us. Citation format can be downloaded by clicking the link: 
-"Cite this repository" in the right side panel.
+If this repository is used, please cite us. 
+1. Citation to the code can be downloaded by clicking: "Cite this repository" in the right side panel.
+2. Citation to the preprint in: https://doi.org/10.26434/chemrxiv-2022-9prf3
 
 ## Description of the Data.
-The data is not publicly available now. It will be publicly available upon acceptance of our paper in a peer-reviewed journal. The preprint can be downloaded from: <link>
+The data is not publicly available now. It will be publicly available upon acceptance of our paper in a peer-reviewed journal. The preprint can be downloaded from: https://doi.org/10.26434/chemrxiv-2022-9prf3
 
 ## Description of the codes.
-The repository contains python scripts for the calculations described in the paper: <link after submission>
+The repository contains python scripts for the calculations described in the paper: https://doi.org/10.26434/chemrxiv-2022-9prf3
 1) get_data.py: This script will download data from the DTU Data website. The public link to the website
 will be available upon acceptance of the paper. This file will download either all the files from the 
 database (if -all/--all option is given) Or it will only download the xyzfiles and the log files of the
