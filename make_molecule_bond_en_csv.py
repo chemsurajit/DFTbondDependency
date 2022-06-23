@@ -10,6 +10,10 @@ import csv
 import logging
 
 
+#Unit definition
+eh2ev = 27.2114
+
+
 def get_files(directory, match=""):
     """This function will return a list of xyz files as list. The list elements
     will be in the form of path object. The expected file name is: dsgdb9nsd_n.xyz
@@ -302,7 +306,8 @@ def update_pd_df(inpdf,
                  smiles=None,
                  chemformula=None,
                  bonds=None,
-                 energies=None):
+                 dft_energies=None,
+                 xtb_energy = None):
     """
     Function to update to dataframe
     """
@@ -328,11 +333,17 @@ def get_arguments():
             required=True
             )
     parser.add_argument(
-            "-log_dir", "--log_dir",
-            help="Location of the directory from where the logfiles will be read.",
+            "-dft_log", "--dft_log",
+            help="Location of the directory from where the DFT logfiles are.",
             type=str,
             required=True
             )
+    parser.add_argument(
+            "-xtb_dir", "--xtb_dir",
+            help="Location of the directory from where the xtb logfiles are.",
+            type=str,
+            required=True
+    )
     parser.add_argument(
             "-output", '--output',
             help="Name of the output file. Should end with csv",
@@ -358,6 +369,25 @@ def get_arguments():
     return parser.parse_args()
 
 
+def get_xtb_energy(xtblogfile):
+    """
+    This function will return the xtb energy in eV unit (It will convert the unit from hartree)
+    The output format is expected to be of xtb
+    """
+    Energy_eh = None
+    Energy_ev = None
+    with open(xtblogfile, "r") as fp:
+        for lines in fp.readlines():
+            if "TOTAL ENERGY" in lines:
+                Energy_eh = float(lines.split()[3])
+                break
+    if Energy_eh is None:
+        logging.warning("No energy value found in the xtb logfile: %s" % xtblogfile)
+    else:
+        Energy_ev = Energy_eh * eh2ev
+    return Energy_ev
+
+
 def main():
     args = get_arguments()
     log_level = args.log.upper()
@@ -368,7 +398,8 @@ def main():
             datefmt="%H:%M:%S",
             )
     xyz_directory = os.path.abspath(args.xyz_dir)
-    log_dir = args.log_dir
+    dft_log_dir = args.log_dir
+    xtb_log_dir = args.log_dir
     #qm9_g4pm2_csv = args.g4mp2_csvfile
     output_csv = args.output
     failed_output = args.failed_file
@@ -377,27 +408,32 @@ def main():
     failed_mols_indices = []
     logging.debug("Directory containing xyz files: %s" % xyz_directory)
     xyzfiles = get_files(xyz_directory, match='dsgdb9nsd_*.xyz')
-    logfiles = get_files(log_dir, match='*_xyz.out')
+    dft_logfiles = get_files(dft_log_dir, match="*_xyz.out")
+    xtb_logfiles = get_files(xtb_log_dir, match="*_xyz.out")
     logging.debug("Number of xyz files: %d" % len(xyzfiles))
     df = pd.DataFrame()
     #g4mp2_pd = pd.read_csv(qm9_g4pm2_csv)
     for i in range(len(xyzfiles)):
         ixyzfile = xyzfiles[i]
-        ilogfile = logfiles[i]
-        logindex = os.path.basename(ilogfile).split("_")[0]
+        idftlogfile = dft_logfiles[i]
+        ixtblogfile = xtb_logfiles[i]
+        logindex = os.path.basename(idftlogfile).split("_")[0]
         xyzindex = os.path.basename(ixyzfile).split("_")[1].split(".")[0]
         if logindex != xyzindex:
             logging.error("The index in logfile and xyzfiles are not same.")
             logging.error("Xyzfile: %s" % ixyzfile)
-            logging.error("logfile: %s" % ilogfile)
+            logging.error("logfile: %s" % idftlogfile)
             break
-        logging.debug("logindex, ilogfile, ixyzfile: %s %s %s" % (logindex, ilogfile, ixyzfile))
-        dft_energies = get_dft_energies(os.path.abspath(ilogfile))
+        logging.debug("logindex, idftlogfile, ixtblogfile, ixyzfile: %s %s %s %s" % (logindex, idftlogfile, ixtblogfile, ixyzfile))
+        dft_energies = get_dft_energies(os.path.abspath(idftlogfile))
+        xtb_energy = get_xtb_energy(os.path.abspath(ixtblogfile))
         if not dft_energies:
             logging.error("No dft energies found for index: %d" % int(logindex))
             failed_mols_indices.append(logindex)
             continue
             # Get the smile string using the xyz2mol module.
+        if xtb_energy is None:
+            logging.error("No xtb energy found for index: %d" % int(logindex))
         mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
             logging.debug("Failed to convert xyz to smiles string: %s" % ixyzfile)
@@ -415,7 +451,8 @@ def main():
                           smiles=smiles,
                           chemformula=chemformula,
                           bonds=bonds_list,
-                          energies=dft_energies)
+                          dft_energies=dft_energies,
+                          xtb_energy=xtb_energy)
         if ((i+1) % 10000) == 0:
             logging.info("Number of molecules converted: %d" % (i+1))
     #write to csv file.
