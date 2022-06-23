@@ -314,7 +314,8 @@ def update_pd_df(inpdf,
     row_dict = {"index":index,
                 "smiles":smiles,
                 "chemformula":chemformula}
-    row_dict.update(energies)
+    row_dict.update(dft_energies)
+    row_dict["GFNXTB"] = xtb_energy
     row_dict.update(bonds)
     df = pd.DataFrame(row_dict, index=[0])
     newdf = pd.concat([inpdf, df])
@@ -398,8 +399,8 @@ def main():
             datefmt="%H:%M:%S",
             )
     xyz_directory = os.path.abspath(args.xyz_dir)
-    dft_log_dir = args.log_dir
-    xtb_log_dir = args.log_dir
+    dft_log_dir = args.dft_log_dir
+    xtb_log_dir = args.xtb_log_dir
     #qm9_g4pm2_csv = args.g4mp2_csvfile
     output_csv = args.output
     failed_output = args.failed_file
