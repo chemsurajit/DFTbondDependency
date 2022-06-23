@@ -334,13 +334,13 @@ def get_arguments():
             required=True
             )
     parser.add_argument(
-            "-dft_log", "--dft_log",
+            "-dft_log_dir", "--dft_log_dir",
             help="Location of the directory from where the DFT logfiles are.",
             type=str,
             required=True
             )
     parser.add_argument(
-            "-xtb_dir", "--xtb_dir",
+            "-xtb_log_dir", "--xtb_log_dir",
             help="Location of the directory from where the xtb logfiles are.",
             type=str,
             required=True
