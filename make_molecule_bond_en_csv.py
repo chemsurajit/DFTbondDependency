@@ -435,6 +435,7 @@ def main():
             # Get the smile string using the xyz2mol module.
         if xtb_energy is None:
             logging.error("No xtb energy found for index: %d" % int(logindex))
+            continue
         mols = get_smiles_from_xyz(ixyzfile)
         if mols is None:
             logging.debug("Failed to convert xyz to smiles string: %s" % ixyzfile)
