@@ -27,7 +27,7 @@ def get_required_mol_data(mol_data_file):
     :return: mold_data as pandas dataframe
     """
     other_columns = [
-        "index", "smiles", "chemformula", "B3LYP-D", "PBE", "M06-2X"
+        "index", "smiles", "chemformula", "B3LYP-D", "PBE", "M06-2X", "GFNXTB"
     ]
     columns_to_read = bonds_list + other_columns
     mol_data_required = pd.read_csv(mol_data_file, usecols=columns_to_read,
@@ -103,7 +103,7 @@ def get_arguments():
 
 def process_reaction_data_column(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, outdir):
     logging.debug("Inside process_reaction_data function")
-    bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X"]
+    bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X", "GFNXTB"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(nodeno) + "_core_" + str(coreno) + ".csv")
     pid = os.getpid()
     ppid = os.getppid()
@@ -171,7 +171,7 @@ def process_reaction_data(rids_pd, coreno, nodeno, molecule_data_pd, g4mp2_en, o
     :return: Integer 0 upon completion.
     """
     logging.debug("Inside process_reaction_data function")
-    bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X"]
+    bonds_ens_cols = bonds_list + ["PBE", "B3LYP-D", "M06-2X", "GFNXTB"]
     output_csv_file = os.path.join(outdir, "Reactions_" + str(nodeno) + "_core_" + str(coreno) + ".csv")
     pid = os.getpid()
     ppid = os.getppid()
@@ -310,10 +310,6 @@ if __name__ == "__main__":
     g4mp2_indices = g4mp2_en["index"].to_list()
     modified_mol_data_pd = molecule_data_pd.loc[molecule_data_pd["index"].isin(g4mp2_indices)]
     del molecule_data_pd
-    #total_reaction_ids_pd = pd.read_csv(args.rid_csv,
-    #                                    usecols=["reactindex","pdtindex"],
-    #                                    keep_default_na=False, na_values=np.nan
-    #                                    ).dropna()
     splitted_rid_pd = np.array_split(bigchunk_rid_pd, nprocs)
     # free the memory where the larger reaction.csv data is loaded.
     del bigchunk_rid_pd
