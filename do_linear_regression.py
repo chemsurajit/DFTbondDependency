@@ -157,11 +157,25 @@ def get_arguments():
         required=False,
         default="output.csv"
     )
+    parser.add_argument(
+        "-logging", "--logging",
+        type=str,
+        required=False,
+        default="info",
+        choices=["debug", "info", "warning", "error", "critical"],
+        help="Provide logging level. Default is warning."
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = get_arguments()
+    log_level = args.logging.upper()
+    logging.basicConfig(
+        format="[%(asctime)s] %(levelname)s: %(message)s",
+        level=log_level,
+        datefmt="%H:%M:%S",
+    )
     csv_dir = args.data_dir
     match = "Reactions_*.csv"
     csv_files = get_csv_files(csv_dir, match=match)
