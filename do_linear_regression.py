@@ -178,12 +178,14 @@ if __name__ == "__main__":
     )
     csv_dir = args.data_dir
     match = "Reactions_*.csv"
+    logging.info("Getting all the data csv files from %s" % csv_dir)
     csv_files = get_csv_files(csv_dir, match=match)
     dft_functional = args.dft_functional
+    logging.debug("DFT method for the LR: %s" % dft_functional)
     output = args.output
     if not output.endswith(".csv"):
-        logging.info("Only csv files allowed as output data file")
+        logging.error("Only csv files allowed as output data file")
         sys.exit()
-
+    logging.info("Now performing the linear regression.")
     compute_sklearn_linear_regression(csv_files, dft_functional, output)
     #compute_statmodel_linear_regression(csv_files, dft_functional, output)
