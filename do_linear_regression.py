@@ -103,7 +103,7 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
         lr_df = pd.DataFrame()
         lr_df["bonds"], lr_df["coefficients"], lr_df["standard_errors"], lr_df["t_values"], lr_df["probabilities"] = [bonds_list, params, sd_b, ts_b, p_values]
-        myDF3.to_csv(output, index=False)
+        lr_df.to_csv(output, index=False)
     else:
         logging.info("Length of the x and y not greater than zero.")
         logging.info("Length bonds: %d" % len(val_x))
