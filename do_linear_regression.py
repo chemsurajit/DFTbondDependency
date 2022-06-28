@@ -11,10 +11,10 @@ from scipy import stats
 Script to perform the linear regression.
 """
 
-bonds_list = ['C_s_C', 'C_d_C', 'C_t_C', 'C_C_A', 'C_s_H', 'C_s_O',
+bonds_list = ['C_d_C', 'C_t_C', 'C_C_A', 'C_s_O',
               'C_d_O', 'C_O_A', 'C_s_N', 'C_d_N', 'C_t_N', 'C_N_A',
-              'O_s_H', 'O_s_N', 'O_d_N', 'O_N_A', 'N_s_N', 'N_d_N',
-              'N_N_A', 'N_s_H']
+              'O_s_N', 'O_d_N', 'O_N_A', 'N_s_N', 'N_d_N',
+              'N_N_A']
 
 
 def compute_statmodel_linear_regression(csv_files, dft_functional):
@@ -102,7 +102,9 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         ts_b = params/sd_b
         p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
         lr_df = pd.DataFrame()
-        lr_df["bonds"], lr_df["coefficients"], lr_df["standard_errors"], lr_df["t_values"], lr_df["probabilities"] = [bonds_list, params, sd_b, ts_b, p_values]
+        logging.debug("Len bonds: %d, len coeffs: %d, len se: %d, len t: %d, len p: %d" %
+                      (len(bonds_list), len(params), len(sd_b), len(ts_b), len(p_values)))
+        lr_df["bonds"], lr_df["coefficients"], lr_df["standard_errors"], lr_df["t_values"], lr_df["probabilities"] = [bonds_list, params[1:], sd_b[1:], ts_b[1:], p_values[1:]]
         lr_df.to_csv(output, index=False)
     else:
         logging.info("Length of the x and y not greater than zero.")
