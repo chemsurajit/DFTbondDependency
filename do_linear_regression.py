@@ -84,7 +84,7 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         val_y = np.array(val_y)
         logging.debug("Max and min of x: %f, %f" % (np.amax(val_x), np.amin(val_x)))
         logging.debug("Max and min of y: %f, %f" % (np.amax(val_y), np.amin(val_y)))
-        reg = LinearRegression().fit(val_x, val_y)
+        reg = LinearRegression(fit_intercept=False).fit(val_x, val_y)
         logging.info("Regression score: %f " % reg.score(val_x, val_y))
         logging.info("The intercept: %f" % reg.intercept_)
         list_coef = reg.coef_.tolist()
@@ -108,6 +108,7 @@ def compute_sklearn_linear_regression(csv_files, dft_functional, output):
         logging.info("Length of the x and y not greater than zero.")
         logging.info("Length bonds: %d" % len(val_x))
         logging.info("Length errors: %d" % len(val_y))
+    logging.info("Linear regression done.")
     return
 
 
